@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spinal cord lesions and sensory loss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#E8ECF1; --panel:#FFFFFF; --ink:#16202D; --muted:#556174; --line:#CDD5DF; --focus:#1D6BD0;
+  --touch:#A8325A; --pain:#2563B0; --cord:#EADBC4; --cord-line:#C9B394;
+  --skin:#EFDCCB; --skin-line:#B99C84; --loss-touch:#E596B0; --loss-pain:#86A9DA; --loss-all:#8CCB8F;
+  --lesion:#1C1C1C; --link:#1D6BD0;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF;
+    --touch:#F06A93; --pain:#62A0FF; --cord:#3A3229; --cord-line:#5E4F3E;
+    --skin:#56473E; --skin-line:#86705F; --loss-touch:#B4587C; --loss-pain:#4670B0; --loss-all:#4C9752;
+    --lesion:#EDE6DA; --link:#4D9CFF;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF;
+  --touch:#F06A93; --pain:#62A0FF; --cord:#3A3229; --cord-line:#5E4F3E;
+  --skin:#56473E; --skin-line:#86705F; --loss-touch:#B4587C; --loss-pain:#4670B0; --loss-all:#4C9752;
+  --lesion:#EDE6DA; --link:#4D9CFF;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.5}
+.wrap{max-width:1420px;margin:0 auto;padding:22px clamp(12px,3vw,32px) 40px}
+.back{display:inline-block;margin:0 0 10px;color:var(--link);font-weight:700;text-decoration:none}
+.back:hover{text-decoration:underline}
+header h1{font-size:clamp(1.55rem,2.7vw,2.2rem);line-height:1.15;margin:0 0 6px;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:80ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;margin:18px 0 14px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lbl{font-weight:700;font-size:.95rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-size:.93rem;border:0;background:transparent;color:var(--ink);
+  padding:7px 11px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+input[type=range]{width:180px;accent-color:var(--ink)}
+.lvl{font-weight:700;min-width:5.5em;font-variant-numeric:tabular-nums}
+.main{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:760px){.main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (min-width:1180px){.main{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr) 370px}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px}
+.panel h2{font-size:1.08rem;margin:0 0 6px}
+.panel .hint{margin:0 0 6px;font-size:.88rem;color:var(--muted)}
+.panel svg{display:block;width:100%;height:auto}
+#cordSvg{max-height:860px}
+#bodySvg{max-height:820px}
+.side{display:flex;flex-direction:column;gap:16px}
+@media (min-width:760px) and (max-width:1179px){.side{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr}}
+@media (max-width:759px){.side{display:flex}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block;border:1px solid var(--line)}
+.ln{width:18px;height:4px;border-radius:2px;display:inline-block}
+#hover{min-height:1.4em;font-size:.9rem;color:var(--muted);margin-top:4px}
+.result{margin:10px 0 0;padding:10px 12px;border-radius:8px;border-left:4px solid var(--line);background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.result.felt{border-left-color:var(--loss-all)}
+.result.notfelt{border-left-color:var(--lesion)}
+.result p{margin:0 0 6px;font-size:.94rem}
+.result p:last-child{margin-bottom:0}
+.result .verdict{font-weight:700;font-size:1rem}
+.pick{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:.9rem}
+.pick select,.pick button{font:inherit;font-size:.9rem;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+.pick button{cursor:pointer;font-weight:700}
+#story h3{font-size:1.02rem;margin:0 0 6px}
+#story p{margin:0 0 8px;font-size:.94rem}
+#story ul{margin:0 0 8px;padding-left:1.1em}
+#story li{font-size:.94rem;margin-bottom:4px}
+#story .clin{font-size:.9rem;color:var(--muted)}
+.note{margin:18px 2px 0;font-size:.86rem;color:var(--muted);max-width:115ch}
+/* SVG */
+.t-lab{font-size:10.5px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.t-reg{font-size:12px;font-weight:700;fill:var(--muted)}
+.t-ann{font-size:11.5px;fill:var(--muted)}
+.t-head{font-size:12.5px;font-weight:700;fill:var(--ink)}
+.cord{fill:var(--cord);stroke:var(--cord-line);stroke-width:1.5}
+.cordhit{fill:transparent;cursor:crosshair}
+.tract-dc{fill:var(--touch);opacity:.22}
+.tract-al{fill:var(--pain);opacity:.22}
+.drg{fill:var(--panel);stroke:var(--muted);stroke-width:1.3;cursor:pointer}
+.drg:hover{stroke:var(--ink);stroke-width:2}
+.root{stroke:var(--muted);stroke-width:1.3}
+.lesion{fill:var(--lesion)}
+.probe-halo{fill:none;stroke:var(--panel);stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
+.probe{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:9 7;animation:flow 0.9s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-16}}
+.block circle{fill:var(--panel);stroke:var(--lesion);stroke-width:2.5}
+.block path{stroke:var(--lesion);stroke-width:3;stroke-linecap:round}
+.derm{stroke:var(--skin-line);stroke-width:.7;cursor:pointer}
+.derm:hover{stroke:var(--ink);stroke-width:1.6}
+.dlab{font-size:7.5px;fill:var(--ink);text-anchor:middle;pointer-events:none;opacity:.8}
+.face{fill:var(--skin);stroke:var(--skin-line);stroke-width:1;cursor:pointer}
+.xs-cord{fill:var(--cord);stroke:var(--cord-line);stroke-width:1.5}
+.xs-gray{fill:color-mix(in srgb,var(--muted) 30%,var(--cord));stroke:var(--cord-line);stroke-width:1}
+@media (prefers-reduced-motion: reduce){.probe{animation:none;stroke-dasharray:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">All BIOL125 simulations</a>
+    <h1>Spinal cord lesions and sensory loss</h1>
+    <p>Place a lesion, then test sensation on the body with a pinprick or a tuning fork. The cord diagram shows which pathway carries the signal and where it stops. Click the cord to move the lesion, or click a dorsal root ganglion to destroy it.</p>
+  </header>
+
+  <div class="toolbar" role="group" aria-label="Lesion controls">
+    <div class="group">
+      <span class="lbl" id="typeLbl">Lesion</span>
+      <div class="seg" role="group" aria-labelledby="typeLbl">
+        <button data-type="hemi">Hemisection</button>
+        <button data-type="complete">Complete transection</button>
+        <button data-type="drg">Dorsal root ganglion</button>
+        <button data-type="dc">Dorsal columns only</button>
+        <button data-type="al">Anterolateral only</button>
+        <button data-type="none">No lesion</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="lbl" id="sideLbl">Side</span>
+      <div class="seg" role="group" aria-labelledby="sideLbl">
+        <button data-side="R">Right</button>
+        <button data-side="L">Left</button>
+      </div>
+    </div>
+    <div class="group">
+      <label class="lbl" for="level">Level</label>
+      <input type="range" id="level" min="0" max="25" step="1" value="16">
+      <span class="lvl" id="levelTxt">T10</span>
+    </div>
+    <div class="group">
+      <span class="lbl" id="viewLbl">Body map shows</span>
+      <div class="seg" role="group" aria-labelledby="viewLbl">
+        <button data-view="both">All deficits</button>
+        <button data-view="pain">Pain &amp; temperature</button>
+        <button data-view="touch">Touch &amp; proprioception</button>
+      </div>
+      <div class="seg"><button id="labelsBtn" aria-pressed="false">Dermatome labels</button></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <section class="panel" aria-label="Spinal cord diagram">
+      <h2>Spinal cord, viewed from the front</h2>
+      <svg id="cordSvg" viewBox="0 0 420 748" role="img" aria-label="Longitudinal spinal cord with dorsal columns, anterolateral columns and dorsal root ganglia at each segment">
+        <g id="cordStatic"></g>
+        <g id="cordLesion"></g>
+        <g id="cordProbe"></g>
+      </svg>
+      <div class="legend">
+        <span><i class="ln" style="background:var(--touch)"></i>Dorsal column (DC): touch, vibration, proprioception</span>
+        <span><i class="ln" style="background:var(--pain)"></i>Anterolateral (AL): pain, temperature</span>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Body map">
+      <h2>Patient, facing you</h2>
+      <svg id="bodySvg" viewBox="0 0 300 610" role="img" aria-label="Body map with dermatomes colored by sensory loss">
+        <g id="bodyRegions"></g>
+        <g id="bodyLabels"></g>
+        <g id="bodyMarks"></g>
+        <text x="80" y="603" text-anchor="middle" class="t-head">Right</text>
+        <text x="220" y="603" text-anchor="middle" class="t-head">Left</text>
+      </svg>
+      <div id="hover" aria-live="polite">Click anywhere on the body to test sensation there.</div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--loss-pain)"></i>Pain &amp; temperature lost</span>
+        <span><i class="sw" style="background:var(--loss-touch)"></i>Touch, vibration &amp; proprioception lost</span>
+        <span><i class="sw" style="background:var(--loss-all)"></i>All sensation lost</span>
+        <span><i class="sw" style="background:var(--skin)"></i>Normal</span>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="panel" aria-label="Sensory exam">
+        <h2>Sensory exam</h2>
+        <div class="seg" role="group" aria-label="Test">
+          <button data-tool="pin">Pinprick (pain)</button>
+          <button data-tool="fork">Tuning fork (vibration)</button>
+        </div>
+        <div class="pick">
+          <label for="pSide">Or test:</label>
+          <select id="pSide" aria-label="Side of body"><option value="R">Right</option><option value="L">Left</option></select>
+          <select id="pSeg" aria-label="Dermatome"></select>
+          <button id="pGo">Test</button>
+        </div>
+        <div id="result" class="result" aria-live="polite"></div>
+      </section>
+
+      <section class="panel" aria-label="Cross-section at the lesion">
+        <h2 id="xsTitle">Cross-section at T10</h2>
+        <svg id="xsSvg" viewBox="0 0 240 182" role="img" aria-label="Cross-section of the spinal cord showing the damaged region">
+          <defs>
+            <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="6" height="6" fill="color-mix(in srgb, var(--lesion) 22%, transparent)"/>
+              <line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--lesion)" stroke-width="3"/>
+            </pattern>
+            <clipPath id="xsClip"><ellipse cx="120" cy="88" rx="94" ry="64"/></clipPath>
+          </defs>
+          <g id="xsStatic"></g>
+          <g id="xsLesion"></g>
+        </svg>
+      </section>
+
+      <section class="panel" aria-label="Explanation">
+        <div id="story" aria-live="polite"></div>
+      </section>
+    </div>
+  </div>
+
+  <p class="note">Simplified, illustrative model. Spinal segments are shown, not vertebral levels (the cord is shorter than the spine, so segments sit higher than the vertebrae of the same name). Pain fibers are modeled as rising one segment before crossing, which is why pain loss on the opposite side begins just below a lesion. Dermatome boundaries are approximate and neighboring dermatomes overlap in real patients. Only sensation is modeled: lesions that cut the lateral corticospinal tract also cause weakness or paralysis below the lesion.</p>
+</div>
+
+<script>
+(() => {
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+/* ---------- segments ---------- */
+const SEGS = ['C2','C3','C4','C5','C6','C7','C8','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12','L1','L2','L3','L4','L5','S1','S2'];
+const N = SEGS.length, IDX = {};
+SEGS.forEach((s, i) => IDX[s] = i);
+const segLabel = k => k === N - 1 ? 'S2–S5' : SEGS[k];
+const rangeName = (a, b) => a === b ? segLabel(a) : `${SEGS[a]}–${b === N - 1 ? 'S5' : SEGS[b]}`;
+const SIDE = {R:'right', L:'left'};
+const opp = s => s === 'L' ? 'R' : 'L';
+
+/* ---------- state ---------- */
+const st = {type:'hemi', side:'L', level:IDX.T10, view:'both', labels:false, tool:'pin',
+  probe:{k:IDX.L4, s:'R', x:null, y:null}};
+
+/* ---------- lesion model ---------- */
+function lesionSet(){
+  const D = {DRG:new Set(), DH:new Set(), DC:new Set(), AL:new Set(), COM:new Set()};
+  const j = st.level, s = st.side;
+  switch (st.type){
+    case 'hemi': D.DC.add(j+s); D.AL.add(j+s); D.DH.add(j+s); break;
+    case 'complete': ['L','R'].forEach(x => { D.DC.add(j+x); D.AL.add(j+x); D.DH.add(j+x); }); D.COM.add(String(j)); break;
+    case 'drg': D.DRG.add(j+s); break;
+    case 'dc': D.DC.add(j+'L'); D.DC.add(j+'R'); break;
+    case 'al': D.AL.add(j+s); break;
+    case 'central': for (let i = j; i <= Math.min(j + 3, N - 1); i++) D.COM.add(String(i)); break;
+  }
+  return D;
+}
+
+/* ---------- cord geometry ---------- */
+const Y = k => 141 + k * 22;
+const X = {
+  R:{drg:100, edge:120, al:141, dh:166, dc:191, ml:184},
+  L:{drg:320, edge:300, al:279, dh:254, dc:229, ml:236}
+};
+const TOPY = 26;
+
+function trace(k, s, mod, D){
+  const x = X[s], o = opp(s);
+  const pts = [[x.drg, Y(k)]];
+  const fail = (pt, why) => ({pts:[...pts, pt], blocked:true, at:pt, why});
+  if (D.DRG.has(k+s)) return {pts, blocked:true, at:[x.drg, Y(k)], why:{what:'DRG', k, s}};
+  pts.push([x.edge, Y(k)]);
+  if (mod === 'touch'){
+    pts.push([x.dc, Y(k)]);
+    for (let j = k; j >= 0; j--) if (D.DC.has(j+s)) return fail([x.dc, Y(j)], {what:'DC', k:j, s});
+    pts.push([x.dc, 112], [x.dc, 100], [X[o].ml, 62], [X[o].ml, TOPY]);
+    return {pts, blocked:false, nucleus: k >= IDX.T7 ? 'gracile' : 'cuneate'};
+  }
+  const c = Math.max(k - 1, 0);
+  if (D.DH.has(k+s)) return fail([x.dh, Y(k)], {what:'DH', k, s});
+  pts.push([x.dh, Y(k)]);
+  if (c !== k && D.DH.has(c+s)) return fail([x.dh, Y(c)], {what:'DH', k:c, s});
+  pts.push([x.dh, Y(c)]);
+  if (D.COM.has(String(c))) return fail([210, Y(c)], {what:'COM', k:c});
+  pts.push([X[o].al, Y(c)]);
+  for (let j = c; j >= 0; j--) if (D.AL.has(j+o)) return fail([X[o].al, Y(j)], {what:'AL', k:j, s:o});
+  pts.push([X[o].al, TOPY]);
+  return {pts, blocked:false, synapse:[x.dh, Y(c)], cross:c};
+}
+
+/* ---------- build cord diagram ---------- */
+(function buildCord(){
+  const g = $('cordStatic');
+  // medulla + cord
+  el('path', {class:'cord', d:'M108 20 Q108 14 116 14 L304 14 Q312 14 312 20 L312 112 Q312 126 300 130 L300 708 Q300 716 292 716 L128 716 Q120 716 120 708 L120 130 Q108 126 108 112 Z'}, g);
+  el('line', {x1:210, y1:14, x2:210, y2:716, stroke:'var(--cord-line)', 'stroke-dasharray':'4 5', 'stroke-width':1.2}, g);
+  el('line', {x1:108, y1:120, x2:312, y2:120, stroke:'var(--cord-line)', 'stroke-width':1.2}, g);
+  // tracts
+  ['R','L'].forEach(s => {
+    el('rect', {class:'tract-al', x:X[s].al - 7, y:TOPY, width:14, height:690 - TOPY}, g);
+    el('rect', {class:'tract-dc', x:X[s].dc - 7, y:100, width:14, height:590}, g);
+    el('rect', {class:'tract-dc', x:X[s].ml - 6, y:TOPY, width:12, height:62 - TOPY}, g);
+    el('ellipse', {cx:X[s].dc, cy:100, rx:9, ry:6, fill:'var(--touch)', opacity:.35}, g);
+  });
+  // crossing in medulla (internal arcuate fibers)
+  el('path', {d:`M${X.R.dc} 100 L${X.L.ml} 62 M${X.L.dc} 100 L${X.R.ml} 62`, stroke:'var(--touch)', 'stroke-width':2, opacity:.35, fill:'none'}, g);
+  const t = (x, y, s, cls, a) => { const e = el('text', {x, y, class:cls, 'text-anchor':a || 'start'}, g); e.textContent = s; return e; };
+  t(210, 10, 'To thalamus (VPL) and S1', 't-head', 'middle');
+  t(8, 72, 'Medulla', 't-reg');
+  t(318, 92, 'Gracile and', 't-ann'); t(318, 106, 'cuneate nuclei:', 't-ann'); t(318, 120, 'touch crosses', 't-ann');
+  // segments
+  for (let k = 0; k < N; k++){
+    const y = Y(k);
+    if (k > 0) el('line', {x1:120, y1:y - 11, x2:300, y2:y - 11, stroke:'var(--cord-line)', 'stroke-width':['T1','L1','S1'].includes(SEGS[k]) ? 1.4 : .5, opacity:.8}, g);
+    t(78, y + 3.5, segLabel(k), 't-lab', 'end');
+    ['R','L'].forEach(s => {
+      const x = X[s];
+      el('line', {class:'root', x1: s === 'R' ? x.drg + 7 : x.drg - 7, y1:y, x2:x.edge, y2:y}, g);
+      const d = el('ellipse', {class:'drg', cx:x.drg, cy:y, rx:7, ry:5, tabindex:0, role:'button',
+        'aria-label':`Destroy ${SIDE[s]} ${segLabel(k)} dorsal root ganglion`}, g);
+      el('title', {}, d).textContent = `${s === 'R' ? 'Right' : 'Left'} ${segLabel(k)} dorsal root ganglion`;
+      const act = () => { st.type = 'drg'; st.side = s; st.level = k; render(); };
+      d.addEventListener('click', act);
+      d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+    });
+  }
+  // region labels
+  [['Cervical', 0, 6], ['Thoracic', 7, 18], ['Lumbar', 19, 23], ['Sacral', 24, 25]].forEach(([n, a, b]) => {
+    const y0 = Y(a) - 9, y1 = Y(b) + 9, ym = (y0 + y1) / 2;
+    el('path', {d:`M24 ${y0} L20 ${y0} L20 ${y1} L24 ${y1}`, stroke:'var(--muted)', fill:'none', 'stroke-width':1}, g);
+    const e = el('text', {x:12, y:ym, class:'t-reg', 'text-anchor':'middle', transform:`rotate(-90 12 ${ym})`}, g); e.textContent = n;
+  });
+  // column labels
+  ['R','L'].forEach(s => { t(X[s].al, 731, 'AL', 't-ann', 'middle'); t(X[s].dc, 731, 'DC', 't-ann', 'middle'); });
+  t(165, 745, 'Right', 't-head', 'middle'); t(255, 745, 'Left', 't-head', 'middle');
+  t(108, 745, 'DRG', 't-ann', 'end'); t(312, 745, 'DRG', 't-ann');
+  // hit area
+  const hit = el('rect', {class:'cordhit', x:120, y:130, width:180, height:578}, g);
+  el('title', {}, hit).textContent = 'Click to place the lesion here';
+  hit.addEventListener('click', e => {
+    const p = svgPoint($('cordSvg'), e);
+    const k = Math.max(0, Math.min(N - 1, Math.floor((p.y - 130) / 22)));
+    st.level = k;
+    if (st.type === 'drg' || st.type === 'none') st.type = 'hemi';
+    if (['hemi','al'].includes(st.type)) st.side = p.x < 210 ? 'R' : 'L';
+    render();
+  });
+})();
+
+function svgPoint(svg, e){
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+/* ---------- body geometry ---------- */
+const mid = 150;
+function interpPoly(poly, t){
+  for (let i = 1; i < poly.length; i++){
+    if (t <= poly[i][0] + 1e-9){
+      const [t0, x0, y0] = poly[i - 1], [t1, x1, y1] = poly[i];
+      const u = (t - t0) / (t1 - t0);
+      return [x0 + (x1 - x0) * u, y0 + (y1 - y0) * u];
+    }
+  }
+  const l = poly[poly.length - 1]; return [l[1], l[2]];
+}
+function meshPoly(lat, med, t0, t1, s0, s1){
+  const ts = [];
+  for (let t = t0; t < t1 - 1e-6; t += 0.04) ts.push(t);
+  ts.push(t1);
+  const at = (t, s) => { const a = interpPoly(lat, t), b = interpPoly(med, t); return [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s]; };
+  return [...ts.map(t => at(t, s0)), ...ts.slice().reverse().map(t => at(t, s1))];
+}
+const HW = [[100,56],[130,53],[180,48],[230,43],[262,46],[300,52]];
+function hw(y){
+  for (let i = 1; i < HW.length; i++) if (y <= HW[i][0]){ const [y0,w0] = HW[i-1], [y1,w1] = HW[i]; return w0 + (w1 - w0) * (y - y0) / (y1 - y0); }
+  return HW[HW.length - 1][1];
+}
+const regions = [];
+function addRegion(seg, side, ptsR){
+  const pts = side === 'R' ? ptsR : ptsR.map(([x, y]) => [300 - x, y]);
+  regions.push({k:IDX[seg], s:side, pts});
+}
+['R','L'].forEach(side => {
+  // neck
+  addRegion('C2', side, [[137,78],[150,78],[150,89],[137,89]]);
+  addRegion('C3', side, [[137,89],[150,89],[150,100],[136,100]]);
+  // trunk bands
+  const bands = [['C4',100,122],['T2',122,136],['T3',136,150],['T4',150,164],['T5',164,176],['T6',176,188],['T7',188,200],
+    ['T8',200,212],['T9',212,224],['T10',224,236],['T11',236,248],['T12',248,262],['L1',262,300]];
+  bands.forEach(([seg, y0, y1]) => {
+    const ys = []; for (let y = y0; y < y1; y += 6) ys.push(y); ys.push(y1);
+    addRegion(seg, side, [...ys.map(y => [mid - hw(y), y]), [mid, y1], [mid, y0]]);
+  });
+  // arm (lateral = away from body)
+  const lat = [[0,92,102],[0.06,80,116],[0.45,66,212],[0.82,56,300],[1,54,344]];
+  const med = [[0,96,126],[0.06,96,134],[0.45,88,214],[0.82,78,300],[1,74,346]];
+  [['C4',0,.06,0,1],['C5',.06,.45,0,.5],['T2',.06,.3,.5,1],['T1',.3,.62,.5,1],['C6',.45,.82,0,.5],['C8',.62,.82,.5,1],
+   ['C6',.82,1,0,.35],['C7',.82,1,.35,.68],['C8',.82,1,.68,1]].forEach(([seg,a,b,c,d]) => addRegion(seg, side, meshPoly(lat, med, a, b, c, d)));
+  // leg
+  const llat = [[0,98,300],[0.5,106,410],[0.9,114,530],[1,104,566]];
+  const lmed = [[0,147,302],[0.5,140,410],[0.9,132,530],[1,142,570]];
+  [['L1',0,.12,0,1],['L2',.12,.32,0,1],['L3',.32,.5,0,1],['L5',.5,.9,0,.5],['L4',.5,.9,.5,1],
+   ['S1',.9,1,0,.25],['L5',.9,1,.25,.75],['L4',.9,1,.75,1]].forEach(([seg,a,b,c,d]) => addRegion(seg, side, meshPoly(llat, lmed, a, b, c, d)));
+  // perineum
+  addRegion('S2', side, [[141,300],[150,300],[150,318]]);
+});
+
+const bodyG = $('bodyRegions'), labG = $('bodyLabels');
+const face = el('ellipse', {class:'face', cx:150, cy:46, rx:25, ry:31}, bodyG);
+el('title', {}, face).textContent = 'Face: trigeminal nerve, not spinal';
+face.addEventListener('click', () => {
+  $('hover').textContent = 'The face is served by the trigeminal nerve (to VPM), not the spinal cord, so spinal lesions spare it.';
+});
+regions.forEach(r => {
+  r.el = el('path', {class:'derm', d:'M' + r.pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L') + ' Z'}, bodyG);
+  r.el.addEventListener('mouseenter', () => { $('hover').textContent = `Patient’s ${SIDE[r.s]} side, ${segLabel(r.k)} dermatome`; });
+  r.el.addEventListener('click', e => {
+    const p = svgPoint($('bodySvg'), e);
+    st.probe = {k:r.k, s:r.s, x:p.x, y:p.y};
+    render();
+  });
+  const cx = r.pts.reduce((a, p) => a + p[0], 0) / r.pts.length, cy = r.pts.reduce((a, p) => a + p[1], 0) / r.pts.length;
+  r.c = [cx, cy];
+});
+// one label per dermatome per side, at the largest region
+const labelSpots = {};
+regions.forEach(r => {
+  const key = r.k + r.s;
+  const area = Math.abs(r.pts.reduce((a, p, i) => { const q = r.pts[(i + 1) % r.pts.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+  if (!labelSpots[key] || area > labelSpots[key].area) labelSpots[key] = {area, c:r.c, k:r.k};
+});
+delete labelSpots[(N - 1) + 'R'];
+Object.values(labelSpots).forEach(o => {
+  const t = el('text', {class:'dlab', x:o.c[0].toFixed(1), y:(o.c[1] + 2.5).toFixed(1)}, labG);
+  t.textContent = o.k === N - 1 ? 'S2–5' : SEGS[o.k];
+});
+
+/* ---------- cross-section ---------- */
+(function buildXS(){
+  const g = $('xsStatic');
+  ['R','L'].forEach(s => {
+    const sx = s === 'R' ? 1 : -1, cx = s === 'R' ? 0 : 240;
+    const x = v => cx + sx * v;
+    el('path', {d:`M${x(30)} 44 L${x(52)} 40`, stroke:'var(--muted)', 'stroke-width':1.5}, g);
+    el('ellipse', {cx:x(20), cy:44, rx:10, ry:7, fill:'var(--panel)', stroke:'var(--muted)', 'stroke-width':1.3}, g);
+  });
+  el('ellipse', {class:'xs-cord', cx:120, cy:88, rx:94, ry:64}, g);
+  el('ellipse', {cx:108, cy:44, rx:10, ry:20, fill:'var(--touch)', opacity:.35}, g);
+  el('ellipse', {cx:132, cy:44, rx:10, ry:20, fill:'var(--touch)', opacity:.35}, g);
+  el('ellipse', {cx:50, cy:112, rx:13, ry:22, fill:'var(--pain)', opacity:.35, transform:'rotate(35 50 112)'}, g);
+  el('ellipse', {cx:190, cy:112, rx:13, ry:22, fill:'var(--pain)', opacity:.35, transform:'rotate(-35 190 112)'}, g);
+  el('path', {class:'xs-gray', d:'M120 74 C112 74 108 66 104 54 C101 44 92 38 86 44 C83 52 92 64 98 78 C93 88 82 96 76 108 C72 118 80 124 90 120 C100 114 108 106 120 106 C132 106 140 114 150 120 C160 124 168 118 164 108 C158 96 147 88 142 78 C148 64 157 52 154 44 C148 38 139 44 136 54 C132 66 128 74 120 74 Z'}, g);
+  el('circle', {cx:120, cy:89, r:2.2, fill:'var(--muted)'}, g);
+  const t = (x, y, s, a, cls) => { const e = el('text', {x, y, class:cls || 't-ann', 'text-anchor':a || 'middle'}, g); e.textContent = s; };
+  t(120, 15, 'Dorsal'); t(120, 172, 'Ventral');
+  t(26, 176, 'Right', 'middle', 't-head'); t(214, 176, 'Left', 'middle', 't-head');
+  t(20, 30, 'DRG'); t(220, 30, 'DRG');
+})();
+
+function renderXS(){
+  const g = $('xsLesion'); g.innerHTML = '';
+  const h = {fill:'url(#hatch)'};
+  const j = st.level, s = st.side;
+  switch (st.type){
+    case 'hemi': el('rect', {...h, x: s === 'R' ? 20 : 120, y:20, width:100, height:140, 'clip-path':'url(#xsClip)'}, g); break;
+    case 'complete': el('ellipse', {...h, cx:120, cy:88, rx:94, ry:64}, g); break;
+    case 'dc': el('path', {...h, d:'M98 26 Q120 18 142 26 L142 64 L98 64 Z'}, g); break;
+    case 'al': {
+      const cx = s === 'R' ? 50 : 190;
+      el('ellipse', {...h, cx, cy:112, rx:15, ry:24, transform:`rotate(${s === 'R' ? 35 : -35} ${cx} 112)`}, g); break;
+    }
+    case 'central': el('ellipse', {...h, cx:120, cy:94, rx:20, ry:15}, g); break;
+    case 'drg': {
+      const x = s === 'R' ? 20 : 220;
+      el('ellipse', {...h, cx:x, cy:44, rx:10, ry:7}, g);
+      el('path', {d:`M${x-8} 36 L${x+8} 52 M${x+8} 36 L${x-8} 52`, style:'stroke:var(--lesion)', 'stroke-width':2.5, 'stroke-linecap':'round'}, g);
+      break;
+    }
+  }
+  const lvl = st.type === 'central' ? rangeName(j, Math.min(j + 3, N - 1)) : segLabel(j);
+  $('xsTitle').textContent = st.type === 'none' ? 'Cross-section (no lesion)' : `Cross-section at ${lvl}`;
+}
+
+/* ---------- render cord lesion and probe ---------- */
+function renderCordLesion(){
+  const g = $('cordLesion'); g.innerHTML = '';
+  const j = st.level, y = Y(j), s = st.side;
+  const bar = (x0, x1) => el('rect', {class:'lesion', x:x0, y:y - 4.5, width:x1 - x0, height:9, rx:2}, g);
+  switch (st.type){
+    case 'hemi': s === 'R' ? bar(120, 210) : bar(210, 300); break;
+    case 'complete': bar(120, 300); break;
+    case 'dc': bar(X.R.dc - 9, X.R.dc + 9); bar(X.L.dc - 9, X.L.dc + 9); break;
+    case 'al': bar(X[s].al - 9, X[s].al + 9); break;
+    case 'central': {
+      const b = Math.min(j + 3, N - 1);
+      el('rect', {class:'lesion', x:194, y:Y(j) - 9, width:32, height:Y(b) - Y(j) + 18, rx:14, opacity:.85}, g); break;
+    }
+    case 'drg': {
+      const x = X[s].drg;
+      el('ellipse', {class:'lesion', cx:x, cy:y, rx:8, ry:6}, g);
+      el('path', {d:`M${x-10} ${y-8} L${x+10} ${y+8} M${x+10} ${y-8} L${x-10} ${y+8}`, style:'stroke:var(--lesion)', 'stroke-width':2.5, 'stroke-linecap':'round'}, g);
+      break;
+    }
+  }
+}
+
+function renderProbe(D){
+  const g = $('cordProbe'); g.innerHTML = '';
+  const m = $('bodyMarks'); m.innerHTML = '';
+  regions.forEach(r => r.el.removeAttribute('stroke-width'));
+  const p = st.probe;
+  if (!p) return null;
+  const mod = st.tool === 'pin' ? 'pain' : 'touch';
+  const tr = trace(p.k, p.s, mod, D);
+  const col = mod === 'pain' ? 'var(--pain)' : 'var(--touch)';
+  const d = 'M' + tr.pts.map(q => q[0] + ' ' + q[1]).join(' L');
+  el('path', {class:'probe-halo', d}, g);
+  el('path', {class:'probe', d, style:`stroke:${col}`}, g);
+  if (tr.synapse && !tr.blocked) el('circle', {cx:tr.synapse[0], cy:tr.synapse[1], r:4, fill:col}, g);
+  if (!tr.blocked) el('circle', {cx:tr.pts[0][0], cy:tr.pts[0][1], r:5, fill:col}, g);
+  if (tr.blocked){
+    const [bx, by] = tr.at;
+    const b = el('g', {class:'block'}, g);
+    el('circle', {cx:bx, cy:by, r:9}, b);
+    el('path', {d:`M${bx-5} ${by-5} L${bx+5} ${by+5} M${bx+5} ${by-5} L${bx-5} ${by+5}`}, b);
+  }
+  // body marker
+  let x = p.x, y = p.y;
+  if (x == null){ const r = regions.filter(r => r.k === p.k && r.s === p.s).sort((a, b) => b.pts.length - a.pts.length)[0]; [x, y] = r.c; }
+  el('circle', {cx:x, cy:y, r:7, fill:'none', style:`stroke:${col}`, 'stroke-width':3}, m);
+  el('circle', {cx:x, cy:y, r:2.5, style:`fill:${col}`}, m);
+  return {tr, mod};
+}
+
+/* ---------- deficits and body ---------- */
+function deficits(D){
+  const out = {R:[], L:[]};
+  ['R','L'].forEach(s => {
+    for (let k = 0; k < N; k++){
+      const t = trace(k, s, 'touch', D).blocked, p = trace(k, s, 'pain', D).blocked;
+      out[s].push(t && p ? 'all' : p ? 'pain' : t ? 'touch' : 'none');
+    }
+  });
+  return out;
+}
+function renderBody(def){
+  regions.forEach(r => {
+    const v = def[r.s][r.k];
+    let f = 'var(--skin)';
+    if (st.view === 'both'){
+      if (v === 'all') f = 'var(--loss-all)'; else if (v === 'pain') f = 'var(--loss-pain)'; else if (v === 'touch') f = 'var(--loss-touch)';
+    } else if (st.view === 'pain'){
+      if (v === 'all' || v === 'pain') f = 'var(--loss-pain)';
+    } else if (v === 'all' || v === 'touch') f = 'var(--loss-touch)';
+    r.el.style.fill = f;
+  });
+  $('bodyLabels').style.display = st.labels ? '' : 'none';
+}
+
+/* ---------- text ---------- */
+const WHY = {
+  hemi: s => `<p><b>Brown-Séquard syndrome.</b> Cutting the ${SIDE[s]} half of the cord severs two different pathways. The ${SIDE[s]} dorsal column carries touch, vibration and proprioception from the <i>same</i> side, because these fibers don’t cross until the medulla. The ${SIDE[s]} anterolateral column carries pain and temperature from the <i>opposite</i> side, because those fibers crossed close to where they entered. So below the lesion, touch is lost on one side and pain on the other.</p><p>At the lesion itself, the ${SIDE[s]} dorsal horn and entering fibers are destroyed, so a narrow band on the ${SIDE[s]} side loses everything. Pain loss on the ${SIDE[opp(s)]} side starts just below the lesion, because pain fibers rise about a segment before crossing.</p>`,
+  complete: () => `<p><b>Complete transection.</b> Every ascending tract is cut, so all sensation is lost on both sides below the lesion. The band at the lesion level is lost too.</p><p class="clin">Motor function below the lesion is also lost (paraplegia or quadriplegia), which this simulator doesn’t show.</p>`,
+  drg: s => `<p><b>Dorsal root ganglion.</b> The DRG holds the cell bodies of all sensory neurons entering at one segment on one side, both nociceptors and mechanoreceptors. Destroying it removes every modality from a single dermatome on the ${SIDE[s]} side only. The pathways in the cord are intact, so everything else is normal.</p><p class="clin">In patients the loss is often smaller than shown, because neighboring dermatomes overlap. Shingles (herpes zoster) reactivates in a single DRG, which is why its rash follows one dermatome.</p>`,
+  dc: () => `<p><b>Dorsal columns only.</b> Touch, vibration, two-point discrimination and proprioception are lost on both sides below the lesion, while pain and temperature survive in the anterolateral columns.</p><p class="clin">Posterior column damage occurs in vitamin B12 deficiency and in tabes dorsalis (late syphilis). Patients often become unsteady with their eyes closed because they lose proprioception.</p>`,
+  al: s => `<p><b>Anterolateral column only.</b> Cutting the ${SIDE[s]} anterolateral column removes pain and temperature from the ${SIDE[opp(s)]} side, starting about one segment below the cut, because those fibers have already crossed. Touch is spared because it travels in the dorsal columns.</p><p class="clin">Surgeons have performed this operation (anterolateral cordotomy) on purpose to relieve intractable pain, for example from cancer.</p>`,
+  central: () => `<p><b>Central cord lesion.</b> A cavity in the center of the cord (syringomyelia) first damages pain fibers crossing in the anterior commissure. Pain and temperature are lost on <i>both</i> sides, but only in the dermatomes whose fibers cross at the damaged segments. In the cervical cord this gives a “cape” over the shoulders and arms. Touch is spared because it doesn’t cross in the cord.</p><p class="clin">Patients may burn or cut their hands without noticing.</p>`,
+  none: () => `<p><b>No lesion.</b> Every pathway is intact. Test a few points to see the two routes: touch ascends on the same side and crosses in the medulla; pain crosses in the cord and ascends on the opposite side. Above the medulla, both run on the same side to the thalamus.</p>`
+};
+const TITLES = {hemi:'Hemisection', complete:'Complete transection', drg:'Dorsal root ganglion', dc:'Dorsal columns', al:'Anterolateral column', central:'Central cord'};
+const DESC = {all:'all sensation lost', pain:'pain and temperature lost', touch:'touch, vibration and proprioception lost'};
+
+function summary(def){
+  const lines = [];
+  ['R','L'].forEach(s => {
+    const parts = [];
+    let k = 0;
+    while (k < N){
+      const v = def[s][k];
+      if (v === 'none'){ k++; continue; }
+      let e = k; while (e + 1 < N && def[s][e + 1] === v) e++;
+      parts.push(`${rangeName(k, e)}: ${DESC[v]}`);
+      k = e + 1;
+    }
+    lines.push(`<li><b>Patient’s ${SIDE[s]} side.</b> ${parts.length ? parts.join('; ') + '.' : 'Normal.'}</li>`);
+  });
+  return `<ul>${lines.join('')}</ul>`;
+}
+function renderStory(def){
+  const j = st.level, s = st.side;
+  let title;
+  if (st.type === 'none') title = 'No lesion';
+  else if (st.type === 'central') title = `${TITLES.central}, ${rangeName(j, Math.min(j + 3, N - 1))}`;
+  else if (['complete','dc'].includes(st.type)) title = `${TITLES[st.type]} at ${segLabel(j)}`;
+  else title = `${s === 'R' ? 'Right' : 'Left'} ${TITLES[st.type].toLowerCase()} at ${segLabel(j)}`;
+  if (st.type === 'drg') title = `${s === 'R' ? 'Right' : 'Left'} ${segLabel(j)} dorsal root ganglion`;
+  let extra = '';
+  if (st.type === 'complete' && j <= IDX.C4) extra = '<p class="clin">A complete lesion this high would also stop breathing, because the phrenic nerve to the diaphragm arises from C3–C5.</p>';
+  $('story').innerHTML = `<h3>${title}</h3>${st.type === 'none' ? '' : summary(def)}${WHY[st.type](s)}${extra}<p class="clin">The face is spared in every case: it is served by the trigeminal nerve, not the spinal cord.</p>`;
+}
+
+function whyText(w){
+  const where = w.k != null ? segLabel(w.k) : '';
+  switch (w.what){
+    case 'DRG': return `the destroyed ${SIDE[w.s]} ${where} dorsal root ganglion, before it reaches the cord`;
+    case 'DH':  return `the destroyed ${SIDE[w.s]} dorsal horn at ${where}, where the fiber enters and synapses`;
+    case 'COM': return `the damaged anterior commissure at ${where}, where it crosses the midline`;
+    case 'DC':  return `the cut ${SIDE[w.s]} dorsal column at ${where}`;
+    case 'AL':  return `the cut ${SIDE[w.s]} anterolateral column at ${where}`;
+  }
+}
+function renderResult(res){
+  const box = $('result');
+  if (!res){ box.className = 'result'; box.innerHTML = '<p>Click the body map to test sensation.</p>'; return; }
+  const {tr, mod} = res, p = st.probe;
+  const where = `${SIDE[p.s]} ${segLabel(p.k)} dermatome`;
+  const test = mod === 'pain' ? 'Pinprick' : 'Tuning fork';
+  const route = mod === 'pain'
+    ? `Route: ${SIDE[p.s]} ${segLabel(p.k)} DRG → ${SIDE[p.s]} dorsal horn, after rising about one segment → crosses in the anterior commissure → ${SIDE[opp(p.s)]} anterolateral column (spinothalamic) → thalamus (VPL) → S1.`
+    : `Route: ${SIDE[p.s]} ${segLabel(p.k)} DRG → ${SIDE[p.s]} dorsal column → ${p.k >= IDX.T7 ? 'gracile' : 'cuneate'} nucleus, where it crosses in the medulla → medial lemniscus → thalamus (VPL) → S1.`;
+  if (tr.blocked){
+    box.className = 'result notfelt';
+    box.innerHTML = `<p class="verdict">${test} on the ${where}: not felt.</p><p>The signal stops at ${whyText(tr.why)}.</p><p class="clin" style="color:var(--muted)">${route}</p>`;
+  } else {
+    box.className = 'result felt';
+    box.innerHTML = `<p class="verdict">${test} on the ${where}: felt${mod === 'pain' ? ' as sharp pain' : ' as buzzing vibration'}.</p><p>${route}</p>`;
+  }
+}
+
+/* ---------- controls ---------- */
+function syncControls(){
+  document.querySelectorAll('[data-type]').forEach(b => b.setAttribute('aria-pressed', b.dataset.type === st.type ? 'true' : 'false'));
+  const sided = ['hemi','drg','al'].includes(st.type);
+  document.querySelectorAll('[data-side]').forEach(b => { b.disabled = !sided; b.setAttribute('aria-pressed', sided && b.dataset.side === st.side ? 'true' : 'false'); });
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === st.view ? 'true' : 'false'));
+  document.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === st.tool ? 'true' : 'false'));
+  $('labelsBtn').setAttribute('aria-pressed', st.labels ? 'true' : 'false');
+  $('level').value = st.level; $('level').disabled = st.type === 'none';
+  $('levelTxt').textContent = st.type === 'central' ? rangeName(st.level, Math.min(st.level + 3, N - 1)) : segLabel(st.level);
+  if (st.probe){ $('pSide').value = st.probe.s; $('pSeg').value = String(st.probe.k); }
+}
+function render(){
+  const D = lesionSet();
+  const def = deficits(D);
+  syncControls();
+  renderCordLesion();
+  renderXS();
+  renderBody(def);
+  renderResult(renderProbe(D));
+  renderStory(def);
+}
+
+SEGS.forEach((s, k) => { const o = document.createElement('option'); o.value = String(k); o.textContent = segLabel(k); $('pSeg').appendChild(o); });
+document.querySelectorAll('[data-type]').forEach(b => b.addEventListener('click', () => { st.type = b.dataset.type; render(); }));
+document.querySelectorAll('[data-side]').forEach(b => b.addEventListener('click', () => { st.side = b.dataset.side; render(); }));
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { st.view = b.dataset.view; render(); }));
+document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => { st.tool = b.dataset.tool; render(); }));
+$('labelsBtn').addEventListener('click', () => { st.labels = !st.labels; render(); });
+$('level').addEventListener('input', e => { st.level = +e.target.value; render(); });
+$('pGo').addEventListener('click', () => { st.probe = {k:+$('pSeg').value, s:$('pSide').value, x:null, y:null}; render(); });
+
+render();
+})();
+</script>
+</body>
+</html>
