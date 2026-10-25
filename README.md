@@ -6,6 +6,7 @@ Interactive simulations for **Introduction to Neuroscience (BIOL125)**. Each sim
 
 | Simulation | Lecture | Folder |
 |---|---|---|
+| Spinal cord lesion simulator | Lecture 9: Somatosensation and Pain | `spinal-cord-lesions/` |
 | Building a center–surround receptive field | Lecture 10: Vision | `retina-center-surround/` |
 
 ## Links
