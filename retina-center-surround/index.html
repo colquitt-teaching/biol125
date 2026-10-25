@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Building a center–surround receptive field</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#E8ECF1; --panel:#FFFFFF; --ink:#16202D; --muted:#556174; --line:#CDD5DF;
+  --rest:#C2C9D3; --depol:#DD5414; --hyper:#1D6BD0; --beam:#F2BE22; --beam-ink:#2A2208;
+  --glu:#1F9147; --focus:#1D6BD0;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747;
+    --rest:#485569; --depol:#FF7B3A; --hyper:#4D9CFF; --beam:#FFD34D; --beam-ink:#2A2208;
+    --glu:#4CC774; --focus:#4D9CFF;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747;
+  --rest:#485569; --depol:#FF7B3A; --hyper:#4D9CFF; --beam:#FFD34D; --beam-ink:#2A2208;
+  --glu:#4CC774; --focus:#4D9CFF;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.5}
+.wrap{max-width:1380px;margin:0 auto;padding:22px clamp(12px,3vw,32px) 40px}
+header h1{font-size:clamp(1.55rem,2.7vw,2.2rem);line-height:1.15;margin:0 0 6px;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:76ch}
+.back{display:inline-block;margin:0 0 10px;color:var(--hyper);font-weight:700;text-decoration:none}
+.back:hover{text-decoration:underline}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;margin:18px 0 14px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.group .lbl{font-weight:700;font-size:.95rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-size:.95rem;border:0;background:transparent;color:var(--ink);
+  padding:7px 12px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.btn{font:inherit;font-size:.95rem;border:1px solid var(--line);background:transparent;color:var(--ink);
+  padding:7px 14px;border-radius:8px;cursor:pointer}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+input[type=range]{width:150px;accent-color:var(--hyper)}
+.fbval{font-variant-numeric:tabular-nums;min-width:3.2em;color:var(--muted)}
+.main{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1060px){.main{grid-template-columns:minmax(0,1fr) 360px}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.schem{padding:8px 8px 12px}
+.schem svg{display:block;width:100%;height:auto;touch-action:manipulation}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;padding:4px 10px 0;font-size:.9rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block;border:1px solid var(--line)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--glu)}
+aside{padding:16px 18px 18px}
+aside h2,.traces h2{font-size:1.1rem;margin:0 0 6px}
+.rf{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.rf svg{width:150px;height:150px;flex:none}
+.rf p{margin:0;font-size:.88rem;color:var(--muted)}
+.stimname{margin:0 0 8px;color:var(--muted)}
+.stimname b{color:var(--ink)}
+ol.steps{margin:0;padding-left:1.3em}
+ol.steps li{margin:0 0 7px;font-size:.95rem}
+ol.steps li::marker{color:var(--muted);font-weight:700}
+.take{margin:12px 0 0;padding:10px 12px;border-left:4px solid var(--beam);background:color-mix(in srgb,var(--beam) 12%,transparent);border-radius:0 8px 8px 0;font-size:.97rem}
+.traces{margin-top:16px;padding:14px 14px 10px}
+.traces .head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 16px}
+.traces .head p{margin:0;font-size:.88rem;color:var(--muted)}
+.traces canvas{display:block;width:100%;height:470px;margin-top:6px}
+.note{margin:18px 2px 0;font-size:.86rem;color:var(--muted);max-width:110ch}
+/* SVG */
+.wire,.wire-o{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.wire{stroke:var(--c,var(--rest))}
+.wire-o{stroke:var(--ink)}
+.body{fill:var(--c,var(--rest));stroke:var(--ink);stroke-width:1.6}
+.cell{transition:none}
+.t-layer{font-size:15px;font-weight:700;fill:var(--muted)}
+.t-cell{font-size:15px;font-weight:700;fill:var(--ink)}
+.t-sub{font-size:13px;fill:var(--muted)}
+.t-val{font-size:14px;fill:var(--ink);font-variant-numeric:tabular-nums}
+.t-small{font-size:12.5px;fill:var(--ink);font-variant-numeric:tabular-nums}
+.beam{cursor:pointer}
+.beam .frame{fill:transparent;stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 5}
+.beam .fill{opacity:0;transition:opacity .18s}
+.beam.on .fill{opacity:1}
+.beam.on .frame{stroke:transparent}
+.beam text{font-size:14px;font-weight:700;fill:var(--muted);text-anchor:middle;pointer-events:none}
+.beam.on text{fill:var(--beam-ink)}
+.cone{cursor:pointer}
+.soma-ring{fill:none;stroke:transparent;stroke-width:4}
+.spiking .soma-ring{stroke:var(--beam)}
+.glu{fill:var(--glu)}
+.spk{fill:var(--beam);stroke:var(--ink);stroke-width:1}
+.sign circle{fill:var(--panel);stroke:var(--ink);stroke-width:1.4}
+.sign text{font-size:15px;font-weight:700;fill:var(--ink);text-anchor:middle}
+.fbarrow{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4}
+.ah{fill:var(--muted)}
+.rfpart{cursor:pointer;stroke:var(--ink);stroke-width:1.4;fill:var(--panel)}
+.rfpart.on{fill:var(--beam)}
+.rftxt{font-size:30px;font-weight:700;fill:var(--ink);text-anchor:middle;pointer-events:none}
+.rftxt.on{fill:var(--beam-ink)}
+@media (prefers-reduced-motion: reduce){.beam .fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">All BIOL125 simulations</a>
+    <h1>Building a center–surround receptive field</h1>
+    <p>Shine light on the center or surround cones and follow the signal through horizontal, bipolar and ganglion cells. Click the light beams, the cones or the receptive-field map. Keys: C center, S surround, F full field, D dark, Space pause.</p>
+  </header>
+
+  <div class="toolbar" role="group" aria-label="Controls">
+    <div class="group">
+      <span class="lbl" id="stimLbl">Stimulus</span>
+      <div class="seg" role="group" aria-labelledby="stimLbl">
+        <button data-stim="0,0">Dark</button>
+        <button data-stim="1,0">Center spot</button>
+        <button data-stim="0,1">Surround ring</button>
+        <button data-stim="1,1">Full field</button>
+      </div>
+    </div>
+    <div class="group">
+      <label class="lbl" for="fb">Horizontal cell feedback</label>
+      <input type="range" id="fb" min="0" max="100" step="5" value="100">
+      <span class="fbval" id="fbval">100%</span>
+    </div>
+    <div class="group">
+      <span class="lbl" id="listenLbl">Listen to spikes</span>
+      <div class="seg" role="group" aria-labelledby="listenLbl">
+        <button data-listen="none" aria-pressed="true">Off</button>
+        <button data-listen="on">ON cell</button>
+        <button data-listen="off">OFF cell</button>
+      </div>
+    </div>
+    <button class="btn" id="pause" aria-pressed="false">Pause</button>
+    <div class="group">
+      <span class="lbl" id="seqLbl">Play a sequence (t1, t2)</span>
+      <div class="seg" role="group" aria-labelledby="seqLbl">
+        <button data-seq="light">Increasing light in center</button>
+        <button data-seq="dark">Decreasing light in center</button>
+        <button data-seq="add">Center, then center plus surround</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <section class="panel schem" aria-label="Retinal circuit schematic">
+      <svg id="circuit" viewBox="0 0 960 650" role="img" aria-label="Cross-section schematic: seven cones, a horizontal cell, ON and OFF bipolar cells, and ON-center and OFF-center ganglion cells">
+        <defs>
+          <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" style="stop-color:var(--beam);stop-opacity:.95"/>
+            <stop offset="1" style="stop-color:var(--beam);stop-opacity:.12"/>
+          </linearGradient>
+          <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path class="ah" d="M0 0 L10 5 L0 10 Z"/>
+          </marker>
+        </defs>
+        <g id="beams"></g>
+        <g id="layerLabels"></g>
+        <g id="hcG"></g>
+        <g id="bcG"></g>
+        <g id="rgcG"></g>
+        <g id="coneG"></g>
+        <g id="fbG"></g>
+        <g id="gluG"></g>
+        <g id="spkG"></g>
+        <g id="txtG"></g>
+      </svg>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--hyper)"></i>Hyperpolarized</span>
+        <span><i class="sw" style="background:var(--rest)"></i>Resting level in darkness</span>
+        <span><i class="sw" style="background:var(--depol)"></i>Depolarized</span>
+        <span><i class="dot"></i>Glutamate release</span>
+        <span><i class="sw" style="background:var(--beam)"></i>Light</span>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h2>Receptive field, top view</h2>
+      <div class="rf">
+        <svg viewBox="0 0 200 200" aria-label="Receptive field map: click the center or surround">
+          <path id="rfS" class="rfpart" role="button" tabindex="0" aria-label="Toggle surround light" fill-rule="evenodd"
+            d="M10 100 A90 90 0 1 0 190 100 A90 90 0 1 0 10 100 Z M62 100 A38 38 0 1 1 138 100 A38 38 0 1 1 62 100 Z"/>
+          <circle id="rfC" class="rfpart" role="button" tabindex="0" aria-label="Toggle center light" cx="100" cy="100" r="38"/>
+          <text class="rftxt" id="rfCt" x="100" y="111">+</text>
+          <text class="rftxt" id="rfSt1" x="36" y="110">−</text>
+          <text class="rftxt" id="rfSt2" x="164" y="110">−</text>
+        </svg>
+        <p>Signs show the ON-center cell’s response: light in the center excites (+), light in the surround inhibits (−). The OFF-center cell has the opposite layout.</p>
+      </div>
+      <h2>What’s happening</h2>
+      <div id="story" aria-live="polite"></div>
+    </aside>
+  </div>
+
+  <section class="panel traces" aria-label="Membrane potential and spike recordings">
+    <div class="head">
+      <h2>Recordings, last 6 seconds</h2>
+      <p>Dashed line = resting level in darkness. Orange shading = depolarization, blue = hyperpolarization. Row tints follow the textbook cell colors.</p>
+    </div>
+    <canvas id="traces"></canvas>
+  </section>
+
+  <p class="note">Simplified, illustrative model with one center cone and six surround cones. Numbers are approximate. Light is shown entering from the top for clarity; in the eye it passes through the ganglion and bipolar layers before reaching the photoreceptors. Horizontal cell feedback onto cones is shown as inhibitory, classically attributed to GABA; protons and ephaptic coupling have also been proposed. Circled signs mark whether each synapse preserves (+) or inverts (−) the presynaptic voltage change. Amacrine cells, omitted here, add further surround inhibition in the inner retina.</p>
+</div>
+
+<script>
+(() => {
+const NS = "http://www.w3.org/2000/svg";
+const X = [190, 280, 370, 500, 630, 720, 810];
+const C = 3;
+const BL = {cone:-40, hc:-30, bc:-45, rate:20};
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function wire(parent, d, w){
+  el('path', {d, class:'wire-o', 'stroke-width': w + 2.6}, parent);
+  return el('path', {d, class:'wire', 'stroke-width': w}, parent);
+}
+const $ = id => document.getElementById(id);
+
+/* ---------- state ---------- */
+let Lc = 0, Ls = 0, fb = 1, paused = false, listen = 'none';
+const S = {cone: Array(7).fill(-40), hc: -30, on: -45, off: -45, onR: 20, offR: 20, glu: 1};
+let seq = null, quiet = false, pauseReq = false, storyDirty = false;
+const markers = [];
+let simT = 0, lastOnSpk = -1, lastOffSpk = -1, sampleAcc = 0;
+const samples = [], spkOn = [], spkOff = [];
+
+/* ---------- build schematic ---------- */
+const beams = $('beams');
+const beamEls = [];
+[{k:'s', x:160, w:240, t:'Surround'}, {k:'c', x:465, w:70, t:'Center'}, {k:'s', x:600, w:240, t:'Surround'}].forEach(b => {
+  const g = el('g', {class:'beam', role:'button', tabindex:'0', 'aria-label': 'Toggle ' + b.t.toLowerCase() + ' light'}, beams);
+  el('rect', {class:'fill', x:b.x, y:6, width:b.w, height:146, rx:6, fill:'url(#beamGrad)'}, g);
+  el('rect', {class:'frame', x:b.x, y:6, width:b.w, height:146, rx:6}, g);
+  const tx = el('text', {x: b.x + b.w/2, y: 30}, g); tx.textContent = b.t;
+  g.dataset.k = b.k;
+  beamEls.push(g);
+  const act = () => toggle(b.k);
+  g.addEventListener('click', act);
+  g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+});
+
+const LL = $('layerLabels');
+[['Light', 74], ['Cones', 186], ['Horizontal', 314], ['cell', 332], ['Bipolar', 416], ['cells', 434], ['Ganglion', 552], ['cells', 570]].forEach(([t, y]) => {
+  const e = el('text', {x: 14, y, class:'t-layer'}, LL); e.textContent = t;
+});
+
+// Horizontal cell
+const hcG = el('g', {class:'cell'}, $('hcG'));
+X.forEach(x => wire(hcG, `M${x} 318 L${x} 300 L${x-14} 277 M${x} 300 L${x+14} 277`, 3));
+wire(hcG, 'M172 318 L828 318', 8);
+el('ellipse', {class:'body', cx:300, cy:321, rx:34, ry:14}, hcG);
+const hcTxt = el('text', {x:300, y:356, class:'t-val', 'text-anchor':'middle'}, $('txtG'));
+
+// Bipolar cells
+function makeBC(x, endX){
+  const g = el('g', {class:'cell'}, $('bcG'));
+  wire(g, `M${x} 401 C${x} 340 ${endX + (x < 500 ? -2 : 2)} 320 ${endX} 277`, 3.5);
+  wire(g, `M${x} 438 L${x} 497`, 4);
+  el('ellipse', {class:'body', cx:x, cy:502, rx:10, ry:6}, g);
+  el('ellipse', {class:'body', cx:x, cy:420, rx:15, ry:20}, g);
+  return g;
+}
+const onBC = makeBC(440, 494), offBC = makeBC(560, 506);
+
+// Ganglion cells
+function makeRGC(x, axonD){
+  const g = el('g', {class:'cell'}, $('rgcG'));
+  wire(g, `M${x} 538 L${x} 509`, 3.5);
+  const ax = wire(g, axonD, 4);
+  el('circle', {class:'body', cx:x, cy:560, r:22}, g);
+  el('circle', {class:'soma-ring', cx:x, cy:560, r:27}, g);
+  return {g, ax};
+}
+const onRGC = makeRGC(440, 'M440 582 L440 616 Q440 628 452 628 L944 628');
+const offRGC = makeRGC(560, 'M560 582 L560 598 Q560 610 572 610 L944 610');
+
+// Cones
+const coneEls = [];
+X.forEach((x, i) => {
+  const g = el('g', {class:'cell cone', transform:`translate(${x},0)`}, $('coneG'));
+  wire(g, 'M0 212 L0 260', 4);
+  el('path', {class:'body', d:'M-12 150 L0 98 L12 150 Z'}, g);
+  el('path', {class:'body', d:'M-12 150 L12 150 L15 182 Q0 192 -15 182 Z'}, g);
+  el('ellipse', {class:'body', cx:0, cy:205, rx:13, ry:14}, g);
+  el('path', {class:'body', d:'M-16 258 L16 258 L20 274 L-20 274 Z'}, g);
+  const t = el('text', {x:18, y:240, class:'t-small'}, g);
+  g.addEventListener('click', () => toggle(i === C ? 'c' : 's'));
+  coneEls.push({g, t});
+});
+
+// Feedback arrow
+const fbG = $('fbG');
+el('path', {class:'fbarrow', d:'M594 314 C598 284 566 268 528 267', 'marker-end':'url(#ah)'}, fbG);
+const fbT = el('text', {x:585, y:250, class:'t-sub', 'text-anchor':'middle'}, fbG); fbT.textContent = 'feedback';
+function sign(x, y, ch, parent){ const g = el('g', {class:'sign'}, parent || $('txtG')); el('circle', {cx:x, cy:y, r:8.5}, g); const t = el('text', {x, y:y+5}, g); t.textContent = ch; return g; }
+sign(606, 296, '−', fbG);
+
+// Text labels
+const T = $('txtG');
+function txt(x, y, s, cls, anchor){ const e = el('text', {x, y, class:cls, 'text-anchor':anchor || 'start'}, T); e.textContent = s; return e; }
+txt(418, 408, 'ON bipolar', 't-cell', 'end');
+txt(418, 425, 'mGluR6 receptor (sign-inverting)', 't-sub', 'end');
+const onTxt = txt(418, 443, '', 't-val', 'end');
+txt(582, 408, 'OFF bipolar', 't-cell');
+txt(582, 425, 'AMPA, kainate receptors (sign-conserving)', 't-sub');
+const offTxt = txt(582, 443, '', 't-val');
+txt(410, 554, 'ON-center ganglion', 't-cell', 'end');
+const onRTxt = txt(410, 574, '', 't-val', 'end');
+txt(590, 554, 'OFF-center ganglion', 't-cell');
+const offRTxt = txt(590, 574, '', 't-val');
+txt(944, 600, 'to optic nerve', 't-sub', 'end');
+sign(458, 368, '−'); sign(542, 368, '+');   // cone -> ON (mGluR6), cone -> OFF (AMPA/kainate)
+sign(458, 524, '+'); sign(542, 524, '+');   // bipolar -> ganglion (AMPA, kainate, NMDA)
+sign(306, 294, '+');                        // cone -> horizontal cell
+txt(500, 470, 'glutamate', 't-sub', 'middle');
+
+/* ---------- colors ---------- */
+let COL = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ['rest','depol','hyper','ink','muted','line','beam','panel','glu'].forEach(k => {
+    COL[k] = hex(cs.getPropertyValue('--' + k));
+  });
+}
+function hex(h){ h = h.trim().replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i, i+2), 16)); }
+function rgb(a, al){ return al == null ? `rgb(${a[0]},${a[1]},${a[2]})` : `rgba(${a[0]},${a[1]},${a[2]},${al})`; }
+function mix(a, b, t){ return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
+function vcol(delta, scale){
+  const t = Math.max(-1, Math.min(1, delta / scale));
+  return rgb(mix(COL.rest, t > 0 ? COL.depol : COL.hyper, Math.abs(t)));
+}
+readColors();
+const mq = matchMedia('(prefers-color-scheme: dark)');
+(mq.addEventListener ? mq.addEventListener('change', readColors) : mq.addListener(readColors));
+
+/* ---------- model ---------- */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const A_LIGHT = 15, K_HC = 1.2, F_MAX = 1.0;
+const rel = v => clamp((v + 60) / 20, 0, 2);                // glutamate release, 1 = dark level
+const rate = v => clamp(20 + 3.5 * (v + 45), 0, 150);       // ganglion firing from bipolar drive
+
+function steady(lc, ls, fbk){
+  const f = F_MAX * fbk;
+  const h = K_HC * A_LIGHT * (6 * ls + lc) / (7 + K_HC * f);
+  const cone = -40 - A_LIGHT * lc + f * h;
+  const R = rel(cone);
+  const on = -45 + 15 * (1 - R), off = -45 - 15 * (1 - R);
+  return {hc: -30 - h, cone, R, on, off, onR: rate(on), offR: rate(off)};
+}
+
+function step(dt){
+  if (seq && !quiet){
+    while (seq.ev.length && simT - seq.t0 >= seq.ev[0][0]){
+      const [, c, s2, label] = seq.ev.shift();
+      Lc = c; Ls = s2; markers.push({t: simT, label}); storyDirty = true;
+    }
+    if (simT - seq.t0 >= seq.dur){ seq = null; pauseReq = true; }
+  }
+  const f = F_MAX * fb;
+  const hcH = -30 - S.hc;
+  let m = 0;
+  for (let i = 0; i < 7; i++){
+    const L = i === C ? Lc : Ls;
+    const tgt = -40 - A_LIGHT * L + (i === C ? f * hcH : 0);
+    S.cone[i] += (tgt - S.cone[i]) * dt / 0.05;
+    m += -40 - S.cone[i];
+  }
+  m /= 7;
+  S.hc += ((-30 - K_HC * m) - S.hc) * dt / 0.15;
+  const R = rel(S.cone[C]);
+  S.glu = R;
+  S.on  += ((-45 + 15 * (1 - R)) - S.on)  * dt / 0.04;
+  S.off += ((-45 - 15 * (1 - R)) - S.off) * dt / 0.04;
+  S.onR = rate(S.on); S.offR = rate(S.off);
+  simT += dt;
+  if (quiet) return;
+  if (Math.random() < S.onR * dt && simT - lastOnSpk > 0.003){ lastOnSpk = simT; spike('on'); }
+  if (Math.random() < S.offR * dt && simT - lastOffSpk > 0.003){ lastOffSpk = simT; spike('off'); }
+  sampleAcc += dt;
+  if (sampleAcc >= 0.01){
+    sampleAcc -= 0.01;
+    samples.push({t: simT, c: S.cone[C], g: S.glu, s: S.cone[0], hc: S.hc, on: S.on, off: S.off, Lc, Ls});
+    while (samples.length && samples[0].t < simT - 6.3) samples.shift();
+  }
+}
+
+/* ---------- spikes, sound, particles ---------- */
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const spkDots = [];
+function spike(which){
+  (which === 'on' ? spkOn : spkOff).push(simT);
+  const r = which === 'on' ? onRGC : offRGC;
+  r.flash = performance.now();
+  if (!reduceMotion && spkDots.length < 60){
+    const len = r.ax.getTotalLength();
+    spkDots.push({path: r.ax, len, d: 0, e: el('circle', {class:'spk', r:4.5}, $('spkG'))});
+  }
+  if (listen === which) click();
+}
+let actx = null, noise = null;
+function ensureAudio(){
+  if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    const n = Math.floor(actx.sampleRate * 0.004);
+    noise = actx.createBuffer(1, n, actx.sampleRate);
+    const d = noise.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+  } catch (e) { actx = null; }
+}
+function click(){
+  if (!actx || paused) return;
+  const s = actx.createBufferSource(); s.buffer = noise;
+  const g = actx.createGain(); g.gain.value = 0.5;
+  s.connect(g); g.connect(actx.destination); s.start();
+}
+
+const glu = [];
+const emitAcc = new Array(9).fill(0);
+function emitParticles(dt){
+  if (reduceMotion) return;
+  const sources = X.map((x, i) => ({x, y:277, w:16, r: 40 * rel(S.cone[i]), vy:38}));
+  sources.push({x:440, y:509, w:7, r: 40 * clamp((S.on + 60) / 30, 0, 1.6), vy:30});
+  sources.push({x:560, y:509, w:7, r: 40 * clamp((S.off + 60) / 30, 0, 1.6), vy:30});
+  sources.forEach((s, k) => {
+    emitAcc[k] += s.r * dt;
+    while (emitAcc[k] >= 1){
+      emitAcc[k] -= 1;
+      if (glu.length > 220) continue;
+      glu.push({x: s.x + (Math.random() * 2 - 1) * s.w, y: s.y, vy: s.vy * (0.7 + Math.random() * 0.6),
+        life: 0, max: k < 7 ? 0.55 : 0.5, e: el('circle', {class:'glu', r:2.3}, $('gluG'))});
+    }
+  });
+}
+function updateParticles(dt){
+  for (let i = glu.length - 1; i >= 0; i--){
+    const p = glu[i];
+    p.life += dt; p.y += p.vy * dt;
+    if (p.life > p.max){ p.e.remove(); glu.splice(i, 1); continue; }
+    p.e.setAttribute('cx', p.x.toFixed(1));
+    p.e.setAttribute('cy', p.y.toFixed(1));
+    p.e.setAttribute('opacity', (1 - p.life / p.max).toFixed(2));
+  }
+  for (let i = spkDots.length - 1; i >= 0; i--){
+    const s = spkDots[i];
+    s.d += 650 * dt;
+    if (s.d > s.len){ s.e.remove(); spkDots.splice(i, 1); continue; }
+    const pt = s.path.getPointAtLength(s.d);
+    s.e.setAttribute('cx', pt.x.toFixed(1)); s.e.setAttribute('cy', pt.y.toFixed(1));
+  }
+}
+
+/* ---------- render schematic ---------- */
+const mv = v => { const r = Math.round(v); return (r < 0 ? '−' : '') + Math.abs(r) + ' mV'; };
+function setText(e, s){ if (e.textContent !== s) e.textContent = s; }
+function renderCells(){
+  coneEls.forEach((c, i) => {
+    c.g.style.setProperty('--c', vcol(S.cone[i] - BL.cone, 14));
+    setText(c.t, mv(S.cone[i]));
+  });
+  hcG.style.setProperty('--c', vcol(S.hc - BL.hc, 14));
+  setText(hcTxt, mv(S.hc));
+  onBC.style.setProperty('--c', vcol(S.on - BL.bc, 10));
+  offBC.style.setProperty('--c', vcol(S.off - BL.bc, 10));
+  setText(onTxt, mv(S.on)); setText(offTxt, mv(S.off));
+  onRGC.g.style.setProperty('--c', vcol(S.onR - BL.rate, 40));
+  offRGC.g.style.setProperty('--c', vcol(S.offR - BL.rate, 40));
+  setText(onRTxt, Math.round(S.onR) + ' spikes/s');
+  setText(offRTxt, Math.round(S.offR) + ' spikes/s');
+  const now = performance.now();
+  [onRGC, offRGC].forEach(r => r.g.classList.toggle('spiking', r.flash && now - r.flash < 45));
+  fbG.setAttribute('opacity', (0.15 + 0.85 * fb).toFixed(2));
+}
+
+/* ---------- traces ---------- */
+const cv = $('traces'), ctx = cv.getContext('2d');
+const rows = [
+  {k:'c',  name:'Center cone',        lo:-58, hi:-22, b:BL.cone, id:[96,176,112]},
+  {k:'g',  name:'Center glutamate', lo:0, hi:2, b:1, id:[96,176,112], unit:'glu'},
+  {k:'s',  name:'Surround cone',      lo:-58, hi:-22, b:BL.cone, id:[96,176,112]},
+  {k:'hc', name:'Horizontal cell',    lo:-50, hi:-24, b:BL.hc, id:[214,118,140]},
+  {k:'on', name:'ON bipolar',         lo:-60, hi:-30, b:BL.bc, id:[70,145,220]},
+  {k:'off',name:'OFF bipolar',        lo:-60, hi:-30, b:BL.bc, id:[140,128,212]},
+  {k:'spkOn', name:'ON-center ganglion', id:[222,184,72]},
+  {k:'spkOff',name:'OFF-center ganglion', id:[232,150,110]}
+];
+function drawTraces(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const narrow = W < 560;
+  const x0 = narrow ? 138 : 196, x1 = W - 10, win = 6, lx = 30;
+  const tx = t => x1 - (simT - t) / win * (x1 - x0);
+  const font = (w, s) => `${w} ${s}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+  const top0 = 8, stimH = 12, gap = 10;
+  const rowsTop = top0 + 2 * (stimH + gap) + 4;
+  const rowH = (H - rowsTop - 22) / rows.length;
+
+  // grid
+  ctx.strokeStyle = rgb(COL.line); ctx.lineWidth = 1;
+  for (let s = 0; s <= win; s++){
+    const x = Math.round(x1 - s / win * (x1 - x0)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(x, top0); ctx.lineTo(x, H - 20); ctx.stroke();
+    ctx.fillStyle = rgb(COL.muted); ctx.font = font(400, 11); ctx.textAlign = 'center';
+    ctx.fillText(s === 0 ? 'now' : '−' + s + ' s', Math.min(x, x1 - 12), H - 6);
+  }
+  // stimulus strips
+  ['Lc', 'Ls'].forEach((k, j) => {
+    const y = top0 + j * (stimH + gap);
+    ctx.fillStyle = rgb(COL.muted); ctx.font = font(700, 12); ctx.textAlign = 'left';
+    ctx.fillText(j ? 'Surround light' : 'Center light', lx, y + 10);
+    ctx.fillStyle = rgb(COL.beam);
+    let start = null;
+    for (let i = 0; i < samples.length; i++){
+      const on = samples[i][k];
+      if (on && start === null) start = samples[i].t;
+      if ((!on || i === samples.length - 1) && start !== null){
+        const end = on ? samples[i].t : samples[i].t;
+        ctx.fillRect(Math.max(x0, tx(start)), y, tx(end) - Math.max(x0, tx(start)), stimH);
+        start = null;
+      }
+    }
+  });
+  // rows
+  rows.forEach((r, ri) => {
+    const top = rowsTop + ri * rowH;
+    ctx.fillStyle = rgb(r.id, 0.13);
+    ctx.fillRect(x0, top + 1, x1 - x0, rowH - 1);
+    ctx.fillStyle = rgb(r.id, 0.9);
+    ctx.fillRect(lx, top + 6, 4, rowH - 12);
+    ctx.strokeStyle = rgb(COL.line);
+    ctx.beginPath(); ctx.moveTo(lx, Math.round(top) + 0.5); ctx.lineTo(x1, Math.round(top) + 0.5); ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillStyle = rgb(COL.ink); ctx.font = font(700, narrow ? 11 : 13);
+    ctx.fillText(r.name, lx + 10, top + rowH / 2 - 2);
+    ctx.fillStyle = rgb(COL.muted); ctx.font = font(400, narrow ? 10.5 : 12);
+    let cur;
+    if (r.k === 'spkOn') cur = Math.round(S.onR) + ' spikes/s';
+    else if (r.k === 'spkOff') cur = Math.round(S.offR) + ' spikes/s';
+    else if (r.k === 'g') cur = Math.round(S.glu * 100) + '% of dark rate';
+    else cur = mv({c:S.cone[C], s:S.cone[0], hc:S.hc, on:S.on, off:S.off}[r.k]);
+    ctx.fillText(cur, lx + 10, top + rowH / 2 + 13);
+
+    if (r.k === 'spkOn' || r.k === 'spkOff'){
+      const arr = r.k === 'spkOn' ? spkOn : spkOff;
+      while (arr.length && arr[0] < simT - win - 0.2) arr.shift();
+      ctx.strokeStyle = rgb(COL.ink); ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      arr.forEach(t => { const x = Math.round(tx(t)) + 0.5; if (x >= x0){ ctx.moveTo(x, top + 7); ctx.lineTo(x, top + rowH - 7); } });
+      ctx.stroke();
+      return;
+    }
+    const y = v => top + 5 + (rowH - 10) * (1 - (clamp(v, r.lo, r.hi) - r.lo) / (r.hi - r.lo));
+    const thr = r.k === 'g' ? 0.02 : 0.3;
+    const yb = y(r.b);
+    // shading
+    for (let i = 1; i < samples.length; i++){
+      const a = samples[i - 1], b = samples[i];
+      const xa = tx(a.t), xb = tx(b.t);
+      if (xb < x0) continue;
+      const v = b[r.k];
+      const d = v - r.b;
+      if (Math.abs(d) < thr) continue;
+      ctx.fillStyle = rgb(d > 0 ? COL.depol : COL.hyper, 0.35);
+      const yy = y(v);
+      ctx.fillRect(Math.max(x0, xa), Math.min(yy, yb), xb - Math.max(x0, xa) + 0.6, Math.abs(yy - yb));
+    }
+    // baseline
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = rgb(COL.muted); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x1, yb); ctx.stroke(); ctx.setLineDash([]);
+    // trace
+    ctx.strokeStyle = rgb(COL.ink); ctx.lineWidth = 1.8; ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < samples.length; i++){
+      const x = tx(samples[i].t); if (x < x0) continue;
+      const yy = y(samples[i][r.k]);
+      if (!started){ ctx.moveTo(x, yy); started = true; } else ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+  });
+  // graded vs action potential brackets
+  const bracket = (y0, y1, label) => {
+    ctx.strokeStyle = rgb(COL.muted); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(20, y0 + 4); ctx.lineTo(16, y0 + 4); ctx.lineTo(16, y1 - 4); ctx.lineTo(20, y1 - 4); ctx.stroke();
+    ctx.save(); ctx.translate(10, (y0 + y1) / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = rgb(COL.muted); ctx.font = font(700, 11); ctx.textAlign = 'center';
+    ctx.fillText(label, 0, 0); ctx.restore();
+  };
+  bracket(rowsTop, rowsTop + 6 * rowH, 'Graded potentials');
+  bracket(rowsTop + 6 * rowH, rowsTop + 8 * rowH, 'Action potentials');
+  // t1 / t2 markers
+  while (markers.length && markers[0].t < simT - win) markers.shift();
+  markers.forEach(m => {
+    const x = Math.round(tx(m.t)) + 0.5;
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = rgb(COL.ink, 0.7); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(x, top0); ctx.lineTo(x, H - 20); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = rgb(COL.ink); ctx.font = font(700, 12); ctx.textAlign = 'left';
+    ctx.fillText(m.label, x + 4, H - 24);
+  });
+}
+
+/* ---------- narrative ---------- */
+function rateDesc(r){
+  if (r > 26) return `speeds up to about ${Math.round(r)} spikes/s`;
+  if (r < 1) return 'falls silent';
+  if (r < 14) return `slows to about ${Math.round(r)} spikes/s`;
+  return 'fires near its resting rate of about 20 spikes/s';
+}
+function renderStory(){
+  const ss = steady(Lc, Ls, fb);
+  const seqName = seq ? seq.name : '';
+  const name = !Lc && !Ls ? 'Darkness' : Lc && !Ls ? 'Center spot' : !Lc && Ls ? 'Surround ring' : 'Full field';
+  const noFb = fb < 0.03;
+  const steps = [];
+  // cones
+  if (!Lc && !Ls) steps.push(['Cones', 'In darkness, cGMP-gated channels in the outer segments stay open. This dark current keeps every cone depolarized (about −40 mV), so all cones release glutamate continuously.']);
+  else if (Lc && !Ls) steps.push(['Cones', 'Light on the center cone starts phototransduction: opsin activates transducin, PDE6 breaks down cGMP, the cGMP-gated channels close and the cone hyperpolarizes. The surround cones stay in the dark.']);
+  else if (!Lc && Ls) steps.push(['Cones', 'Light hyperpolarizes the six surround cones as phototransduction closes their cGMP-gated channels. The center cone gets no light.']);
+  else steps.push(['Cones', 'Light hyperpolarizes every cone, center and surround alike.']);
+  // horizontal cell
+  if (!Lc && !Ls) steps.push(['Horizontal cell', 'Steady glutamate from all cones keeps the horizontal cell depolarized (about −30 mV).']);
+  else if (Lc && !Ls) steps.push(['Horizontal cell', `Only one of the seven cones feeding it has cut its glutamate release, so the horizontal cell hyperpolarizes only slightly (${mv(ss.hc)}).`]);
+  else steps.push(['Horizontal cell', `Horizontal cells pool input from many cones across a wide area. Most of those cones now release less glutamate, so the horizontal cell hyperpolarizes strongly (${mv(ss.hc)}).`]);
+  // feedback
+  if (noFb) steps.push(['Feedback', 'Feedback is switched off, so the horizontal cell’s voltage no longer reaches the center cone terminal. Nothing that happens in the surround can affect the center pathway.']);
+  else if (!Lc && !Ls) steps.push(['Feedback', 'The depolarized horizontal cell inhibits the center cone terminal (classically via GABA), steadily damping its calcium channels and glutamate release.']);
+  else if (Lc && !Ls) steps.push(['Feedback', 'The horizontal cell barely changes, so its feedback onto the center cone barely changes either.']);
+  else if (!Lc && Ls) steps.push(['Feedback', 'With the horizontal cell hyperpolarized, its inhibitory feedback weakens. The center cone terminal depolarizes even though no light fell on it: this is lateral inhibition being released.']);
+  else steps.push(['Feedback', 'Weaker feedback depolarizes the center cone terminal, cancelling most of its own light-driven hyperpolarization.']);
+  // center cone output
+  const pct = Math.round(ss.R * 100);
+  const less = ss.R < 0.9, more = ss.R > 1.1;
+  if (less) steps.push(['Center cone output', `Net result: the center cone sits at ${mv(ss.cone)} and releases less glutamate than in darkness (about ${pct}% of the dark rate).`]);
+  else if (more) steps.push(['Center cone output', `Net result: the center cone sits at ${mv(ss.cone)} and releases more glutamate than in darkness (about ${pct}% of the dark rate).`]);
+  else steps.push(['Center cone output', `Net result: the center cone sits at ${mv(ss.cone)} and releases glutamate at about its dark rate.`]);
+  // bipolars
+  if (less){
+    steps.push(['ON bipolar', `Less glutamate means less mGluR6 activation, so TRPM1 channels open and the ON bipolar cell depolarizes (${mv(ss.on)}). This synapse inverts the sign.`]);
+    steps.push(['OFF bipolar', `The OFF bipolar cell uses ionotropic AMPA/kainate receptors, which preserve the sign. Less glutamate hyperpolarizes it (${mv(ss.off)}).`]);
+  } else if (more){
+    steps.push(['ON bipolar', `More glutamate activates more mGluR6 receptors, closing TRPM1 channels, so the ON bipolar cell hyperpolarizes (${mv(ss.on)}).`]);
+    steps.push(['OFF bipolar', `More glutamate at its AMPA/kainate receptors depolarizes the OFF bipolar cell (${mv(ss.off)}).`]);
+  } else {
+    steps.push(['ON bipolar', `With glutamate near its dark level, the ON bipolar cell stays near rest (${mv(ss.on)}).`]);
+    steps.push(['OFF bipolar', `The OFF bipolar cell also stays near rest (${mv(ss.off)}).`]);
+  }
+  // ganglion
+  if (!Lc && !Ls) steps.push(['Ganglion cells', 'Bipolar cells release glutamate onto ganglion cells. Both ganglion cells fire at their maintained rate of about 20 spikes/s.']);
+  else steps.push(['Ganglion cells', `Bipolar cells excite ganglion cells with glutamate (AMPA, kainate and NMDA receptors), and ganglion cells convert that graded input into action potentials. The ON-center ganglion cell ${rateDesc(ss.onR)}, and the OFF-center ganglion cell ${rateDesc(ss.offR)}.`]);
+  // take-home
+  let take;
+  if (!Lc && !Ls) take = 'Both ganglion cells fire at their maintained rate. Light the center or the surround to see how the circuit responds.';
+  else if (noFb && !Lc) take = 'Without horizontal cell feedback, light in the surround has no effect. Turn feedback back up to restore the surround.';
+  else if (noFb && Ls) take = 'Without feedback, full-field light acts just like a center spot: the surround no longer opposes the center.';
+  else if (Lc && !Ls) take = 'A spot in the center excites the ON-center cell and silences the OFF-center cell.';
+  else if (!Lc && Ls) take = 'Light in the surround has the opposite effect to light in the center. That opposition is the antagonistic surround.';
+  else {
+    const spot = steady(1, 0, fb);
+    take = `Center and surround cancel, so with uniform light the ON-center cell fires close to its dark rate (about ${Math.round(ss.onR)} spikes/s, versus ${Math.round(spot.onR)} for a center spot). Ganglion cells signal contrast, not absolute light level.`;
+  }
+  $('story').innerHTML =
+    `<p class="stimname">Stimulus: <b>${name}</b>${seqName ? ` (sequence: ${seqName})` : ''}</p><ol class="steps">` +
+    steps.map(([h, t]) => `<li><b>${h}.</b> ${t}</li>`).join('') +
+    `</ol><p class="take">${take}</p>`;
+}
+
+/* ---------- controls ---------- */
+function syncUI(){
+  beamEls.forEach(b => {
+    const on = b.dataset.k === 'c' ? Lc : Ls;
+    b.classList.toggle('on', !!on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  $('rfC').classList.toggle('on', !!Lc); $('rfCt').classList.toggle('on', !!Lc);
+  $('rfS').classList.toggle('on', !!Ls);
+  $('rfSt1').classList.toggle('on', !!Ls); $('rfSt2').classList.toggle('on', !!Ls);
+  $('rfC').setAttribute('aria-pressed', Lc ? 'true' : 'false');
+  $('rfS').setAttribute('aria-pressed', Ls ? 'true' : 'false');
+  document.querySelectorAll('[data-stim]').forEach(b => {
+    b.setAttribute('aria-pressed', b.dataset.stim === `${Lc},${Ls}` ? 'true' : 'false');
+  });
+  renderStory();
+}
+function setStim(c, s){ seq = null; Lc = c; Ls = s; syncUI(); }
+function toggle(k){ seq = null; if (k === 'c') Lc = Lc ? 0 : 1; else Ls = Ls ? 0 : 1; syncUI(); }
+const SEQS = {
+  light: {name:'Increasing light in center', init:[0,0], ev:[[1, 1,0,'t1'], [4, 0,0,'t2']]},
+  dark:  {name:'Decreasing light in center', init:[1,1], ev:[[1, 0,1,'t1'], [4, 1,1,'t2']]},
+  add:   {name:'Center, then center plus surround', init:[0,0], ev:[[1, 1,0,'t1'], [3, 1,1,'t2']]}
+};
+function runSeq(kind){
+  const d = SEQS[kind];
+  Lc = d.init[0]; Ls = d.init[1];
+  quiet = true; for (let i = 0; i < 2000; i++) step(0.002); quiet = false;
+  samples.length = 0; spkOn.length = 0; spkOff.length = 0; markers.length = 0;
+  glu.forEach(p => p.e.remove()); glu.length = 0;
+  seq = {name: d.name, t0: simT, ev: d.ev.map(e => e.slice()), dur: 5.95};
+  markers.push({t: simT, label: 't0'});
+  if (paused) togglePause();
+  syncUI();
+}
+document.querySelectorAll('[data-seq]').forEach(b => b.addEventListener('click', () => runSeq(b.dataset.seq)));
+
+document.querySelectorAll('[data-stim]').forEach(b => b.addEventListener('click', () => {
+  const [c, s] = b.dataset.stim.split(',').map(Number); setStim(c, s);
+}));
+['rfC', 'rfS'].forEach(id => {
+  const e = $(id), k = id === 'rfC' ? 'c' : 's';
+  e.addEventListener('click', () => toggle(k));
+  e.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(k); } });
+});
+$('fb').addEventListener('input', e => {
+  fb = e.target.value / 100; $('fbval').textContent = e.target.value + '%'; renderStory();
+});
+document.querySelectorAll('[data-listen]').forEach(b => b.addEventListener('click', () => {
+  listen = b.dataset.listen;
+  if (listen !== 'none') ensureAudio();
+  document.querySelectorAll('[data-listen]').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+}));
+function togglePause(){
+  paused = !paused;
+  const b = $('pause'); b.textContent = paused ? 'Resume' : 'Pause'; b.setAttribute('aria-pressed', paused ? 'true' : 'false');
+}
+$('pause').addEventListener('click', togglePause);
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea') return;
+  const k = e.key.toLowerCase();
+  if (k === 'c') toggle('c');
+  else if (k === 's') toggle('s');
+  else if (k === 'f') setStim(1, 1);
+  else if (k === 'd') setStim(0, 0);
+  else if (k === ' ' && tag !== 'button' && !e.target.getAttribute('role')) { e.preventDefault(); togglePause(); }
+});
+
+/* ---------- loop ---------- */
+let last = performance.now();
+// prefill a little dark history
+for (let i = 0; i < 300; i++) step(0.002);
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!paused){
+    const n = Math.max(1, Math.round(dt / 0.002)), h = dt / n;
+    for (let i = 0; i < n; i++){ step(h); if (pauseReq) break; }
+    if (storyDirty){ storyDirty = false; syncUI(); }
+    if (pauseReq){ pauseReq = false; if (!paused) togglePause(); }
+    emitParticles(dt);
+    updateParticles(dt);
+  }
+  renderCells();
+  drawTraces();
+  requestAnimationFrame(frame);
+}
+syncUI();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
