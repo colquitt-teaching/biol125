@@ -267,7 +267,14 @@ const LL = $('layerLabels');
 
 // Horizontal cell
 const hcG = el('g', {class:'cell'}, $('hcG'));
-X.forEach(x => wire(hcG, `M${x} 318 L${x} 300 L${x-14} 277 M${x} 300 L${x+14} 277`, 3));
+// postsynaptic density: a short dark bar at each dendrite tip, set back from the presynaptic terminal
+function psd(parent, x, y){
+  el('path', {d:`M${x-3.5} ${y} L${x+3.5} ${y}`, style:'stroke:var(--ink)', 'stroke-width':3, 'stroke-linecap':'round'}, parent);
+}
+X.forEach(x => {
+  wire(hcG, `M${x} 318 L${x} 303 L${x-16} 286 M${x} 303 L${x+16} 286`, 3);
+  psd(hcG, x - 16, 286); psd(hcG, x + 16, 286);
+});
 wire(hcG, 'M172 318 L828 318', 8);
 el('ellipse', {class:'body', cx:300, cy:321, rx:34, ry:14}, hcG);
 const hcTxt = el('text', {x:300, y:356, class:'t-val', 'text-anchor':'middle'}, $('txtG'));
@@ -275,18 +282,20 @@ const hcTxt = el('text', {x:300, y:356, class:'t-val', 'text-anchor':'middle'}, 
 // Bipolar cells
 function makeBC(x, endX){
   const g = el('g', {class:'cell'}, $('bcG'));
-  wire(g, `M${x} 401 C${x} 340 ${endX + (x < 500 ? -2 : 2)} 320 ${endX} 277`, 3.5);
+  wire(g, `M${x} 401 C${x} 340 ${endX + (x < 500 ? -2 : 2)} 320 ${endX} 286`, 3.5);
+  psd(g, endX, 286);
   wire(g, `M${x} 438 L${x} 497`, 4);
   el('ellipse', {class:'body', cx:x, cy:502, rx:10, ry:6}, g);
   el('ellipse', {class:'body', cx:x, cy:420, rx:15, ry:20}, g);
   return g;
 }
-const onBC = makeBC(440, 494), offBC = makeBC(560, 506);
+const onBC = makeBC(440, 495), offBC = makeBC(560, 505);
 
 // Ganglion cells
 function makeRGC(x, axonD){
   const g = el('g', {class:'cell'}, $('rgcG'));
-  wire(g, `M${x} 538 L${x} 509`, 3.5);
+  wire(g, `M${x} 538 L${x} 518`, 3.5);
+  psd(g, x, 518);
   const ax = wire(g, axonD, 4);
   el('circle', {class:'body', cx:x, cy:560, r:22}, g);
   el('circle', {class:'soma-ring', cx:x, cy:560, r:27}, g);
@@ -440,16 +449,16 @@ const glu = [];
 const emitAcc = new Array(9).fill(0);
 function emitParticles(dt){
   if (reduceMotion) return;
-  const sources = X.map((x, i) => ({x, y:277, w:16, r: 40 * rel(S.cone[i]), vy:38}));
-  sources.push({x:440, y:509, w:7, r: 40 * clamp((S.on + 60) / 30, 0, 1.6), vy:30});
-  sources.push({x:560, y:509, w:7, r: 40 * clamp((S.off + 60) / 30, 0, 1.6), vy:30});
+  const sources = X.map((x, i) => ({x, y:276, w:15, r: 40 * rel(S.cone[i]), vy:28}));
+  sources.push({x:440, y:510, w:6, r: 40 * clamp((S.on + 60) / 30, 0, 1.6), vy:26});
+  sources.push({x:560, y:510, w:6, r: 40 * clamp((S.off + 60) / 30, 0, 1.6), vy:26});
   sources.forEach((s, k) => {
     emitAcc[k] += s.r * dt;
     while (emitAcc[k] >= 1){
       emitAcc[k] -= 1;
       if (glu.length > 220) continue;
       glu.push({x: s.x + (Math.random() * 2 - 1) * s.w, y: s.y, vy: s.vy * (0.7 + Math.random() * 0.6),
-        life: 0, max: k < 7 ? 0.55 : 0.5, e: el('circle', {class:'glu', r:2.3}, $('gluG'))});
+        life: 0, max: k < 7 ? 0.32 : 0.3, e: el('circle', {class:'glu', r:2}, $('gluG'))});
     }
   });
 }
