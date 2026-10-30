@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GSL8D700XD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GSL8D700XD');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orientation tuning in V1: simple and complex cells</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#E8ECF1; --panel:#FFFFFF; --ink:#16202D; --muted:#556174; --line:#CDD5DF; --focus:#1D6BD0;
+  --screen:#1E4F8C; --screen-line:#0E2A4D; --stim:#FFFFFF; --rf:#FFE08A;
+  --on:#DD5414; --link:#1D6BD0; --cortex:#E7D9EE; --cortex-line:#A894B5; --cell:#7A5A92;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF;
+    --screen:#1A4378; --screen-line:#0B2140; --stim:#FFFFFF; --rf:#FFE08A;
+    --on:#FF7B3A; --link:#4D9CFF; --cortex:#3A3044; --cortex-line:#6D5C7C; --cell:#C7A6E0;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF;
+  --screen:#1A4378; --screen-line:#0B2140; --stim:#FFFFFF; --rf:#FFE08A;
+  --on:#FF7B3A; --link:#4D9CFF; --cortex:#3A3044; --cortex-line:#6D5C7C; --cell:#C7A6E0;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.5}
+.wrap{max-width:1420px;margin:0 auto;padding:22px clamp(12px,3vw,32px) 40px}
+.back{display:inline-block;margin:0 0 10px;color:var(--link);font-weight:700;text-decoration:none}
+.back:hover{text-decoration:underline}
+header h1{font-size:clamp(1.55rem,2.7vw,2.2rem);line-height:1.15;margin:0 0 6px;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:82ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;margin:18px 0 14px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lbl{font-weight:700;font-size:.95rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button,.btn{font:inherit;font-size:.93rem;border:0;background:transparent;color:var(--ink);
+  padding:7px 11px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.btn{border:1px solid var(--line);border-radius:8px}
+.seg button[aria-pressed="true"],.btn[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.btn.primary{background:var(--ink);color:var(--panel);font-weight:700}
+.btn:disabled,.seg button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,canvas:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+input[type=range]{width:170px;accent-color:var(--ink)}
+.oriTxt{font-weight:700;min-width:3.2em;font-variant-numeric:tabular-nums}
+.main{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1000px){.main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px}
+.panel h2{font-size:1.08rem;margin:0 0 4px}
+.hint{margin:0 0 8px;font-size:.88rem;color:var(--muted)}
+#screen{display:block;width:100%;aspect-ratio:4/3;border-radius:8px;cursor:grab;touch-action:none}
+#screen.dragging{cursor:grabbing}
+.readout{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:6px 0 4px}
+.rate{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.rate small{font-size:.95rem;font-weight:400;color:var(--muted)}
+.who{color:var(--muted);font-size:.95rem}
+#live{display:block;width:100%;height:120px}
+#tuning{display:block;width:100%;height:330px;margin-top:8px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.stack{display:flex;flex-direction:column;gap:16px}
+#cortexSvg,#penSvg{display:block;width:100%;height:auto}
+#story h3{font-size:1.02rem;margin:0 0 6px}
+#story p{margin:0 0 8px;font-size:.95rem}
+#story .now{padding:9px 12px;border-left:4px solid var(--on);background:color-mix(in srgb,var(--on) 9%,transparent);border-radius:0 8px 8px 0}
+#story .muted{color:var(--muted);font-size:.9rem}
+.note{margin:18px 2px 0;font-size:.86rem;color:var(--muted);max-width:115ch}
+.t-lab{font-size:12px;fill:var(--muted)}
+.t-head{font-size:13px;font-weight:700;fill:var(--ink)}
+.t-site{font-size:10px;font-weight:700;fill:var(--panel);text-anchor:middle;pointer-events:none}
+.face{stroke:var(--cortex-line);stroke-width:1.4}
+.cellDot{fill:var(--cell);stroke:var(--panel);stroke-width:1.5;cursor:pointer}
+.cellDot:hover{stroke:var(--ink);stroke-width:2.5}
+.cellDot.simple{fill:color-mix(in srgb,var(--cell) 55%,var(--panel))}
+.sel{fill:none;stroke:var(--on);stroke-width:3}
+.electrode{stroke:var(--muted);stroke-width:2.5;stroke-linecap:round}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">All BIOL125 simulations</a>
+    <h1>Orientation tuning in V1: simple and complex cells</h1>
+    <p>Recreate Hubel and Wiesel’s experiment. Pick a neuron in the cortex, then rotate, move and sweep a bar of light on the screen and listen to how it fires. Run an orientation test to build its tuning curve, or drive an electrode through the cortex to see how orientation preference is organized into columns.</p>
+  </header>
+
+  <div class="toolbar" role="group" aria-label="Stimulus controls">
+    <div class="group">
+      <span class="lbl" id="shapeLbl">Stimulus</span>
+      <div class="seg" role="group" aria-labelledby="shapeLbl">
+        <button data-shape="bar">Bar</button>
+        <button data-shape="spot">Spot</button>
+        <button data-shape="full">Full field</button>
+      </div>
+    </div>
+    <div class="group">
+      <label class="lbl" for="ori">Orientation</label>
+      <input type="range" id="ori" min="0" max="179" step="1" value="0">
+      <span class="oriTxt" id="oriTxt">0°</span>
+    </div>
+    <div class="group">
+      <button class="btn" id="lightBtn" aria-pressed="true">Light on</button>
+      <button class="btn" id="flashBtn">Flash 1 s</button>
+      <button class="btn" id="sweepBtn" aria-pressed="false">Sweep across</button>
+      <button class="btn" id="centerBtn">Re-center</button>
+    </div>
+    <div class="group">
+      <button class="btn" id="rfBtn" aria-pressed="false">Show receptive field</button>
+      <span class="lbl" id="listenLbl">Sound</span>
+      <div class="seg" role="group" aria-labelledby="listenLbl">
+        <button data-listen="off" aria-pressed="true">Off</button>
+        <button data-listen="on">On</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <section class="panel" aria-label="Stimulus screen">
+      <h2>Screen</h2>
+      <p class="hint">Drag the bar to move it. Drag the round handle, use the slider, or press ← → with the screen focused to rotate it.</p>
+      <canvas id="screen" tabindex="0" aria-label="Stimulus screen with a bar of light"></canvas>
+    </section>
+
+    <section class="panel" aria-label="Recording">
+      <h2>Recording</h2>
+      <div class="readout">
+        <span class="rate" id="rateTxt">0 <small>spikes/s</small></span>
+        <span class="who" id="whoTxt"></span>
+      </div>
+      <canvas id="live" aria-label="Live spike recording"></canvas>
+      <div class="row">
+        <button class="btn primary" id="testBtn">Run orientation test</button>
+        <span class="hint" style="margin:0">Flashes the bar at 8 orientations, at its current position.</span>
+      </div>
+      <canvas id="tuning" aria-label="Spike rasters by orientation and the tuning curve"></canvas>
+    </section>
+
+    <section class="panel" aria-label="Visual cortex">
+      <h2>Primary visual cortex (V1)</h2>
+      <p class="hint">Click a neuron to record from it. Lighter dots in layer 4 are simple cells; darker dots in the other layers are complex cells.</p>
+      <svg id="cortexSvg" viewBox="0 0 520 330" role="img" aria-label="Block of visual cortex with layers and orientation columns">
+        <g id="cxStatic"></g><g id="cxCells"></g><g id="cxElec"></g>
+      </svg>
+      <div class="row">
+        <button class="btn" id="mapBtn" aria-pressed="false">Show orientation map</button>
+        <button class="btn" id="vertBtn">Vertical penetration</button>
+        <button class="btn" id="oblBtn">Oblique penetration</button>
+      </div>
+      <svg id="penSvg" viewBox="0 0 520 190" role="img" aria-label="Orientation preference along the electrode track"></svg>
+    </section>
+
+    <section class="panel" aria-label="Explanation">
+      <div id="story" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <p class="note">Simplified, illustrative model. Every neuron here shares the same receptive-field location, as neighboring columns do. Simple cells sum 4 ON-center LGN inputs whose centers line up; complex cells sum the rectified outputs of 7 simple cells with the same preference at neighboring positions. Placing simple cells in layer 4 and complex cells in the other layers is a common simplification; both types occur in several layers. Orientation is measured counterclockwise from horizontal, so 90° is vertical.</p>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rad = d => d * Math.PI / 180;
+const angDiff = (a, b) => { let d = Math.abs(((a - b) % 180 + 180) % 180); return Math.min(d, 180 - d); };
+
+/* ---------- colors ---------- */
+let COL = {};
+function hex(h){ h = h.trim().replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i, i+2), 16)); }
+function readColors(){ const cs = getComputedStyle(document.documentElement);
+  ['ink','muted','line','panel','screen','screen-line','stim','rf','on','bg'].forEach(k => COL[k] = hex(cs.getPropertyValue('--' + k))); }
+const rgb = (a, al) => al == null ? `rgb(${a})` : `rgba(${a[0]},${a[1]},${a[2]},${al})`;
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); drawTuning(); renderCortex(); });
+const oriHue = o => `hsl(${(2 * o) % 360} 62% 52%)`;
+
+/* ---------- receptive-field model ---------- */
+const STEP = 0.1, H = 5, GN = Math.round(2 * H / STEP) + 1, GX = new Float32Array(GN * GN), GY = new Float32Array(GN * GN);
+for (let i = 0; i < GN; i++) for (let j = 0; j < GN; j++){ GX[i * GN + j] = -H + j * STEP; GY[i * GN + j] = -H + i * STEP; }
+const SC = 0.45, SS = 1.1, ASR = SC * SC / (SS * SS), THR = 0.38;
+const LGN_POS = [-1.5, -0.5, 0.5, 1.5], CX_OFF = [-1.5, -1, -0.5, 0, 0.5, 1, 1.5];
+function simpleWeights(theta, off){
+  const W = new Float32Array(GN * GN), t = rad(theta), ux = Math.cos(t), uy = Math.sin(t), nx = -uy, ny = ux;
+  const norm = STEP * STEP / (2 * Math.PI * SC * SC);
+  LGN_POS.forEach(s => {
+    const cx = s * ux + off * nx, cy = s * uy + off * ny;
+    for (let k = 0; k < W.length; k++){
+      const dx = GX[k] - cx, dy = GY[k] - cy, r2 = dx * dx + dy * dy;
+      W[k] += (Math.exp(-r2 / (2 * SC * SC)) - ASR * Math.exp(-r2 / (2 * SS * SS))) * norm;
+    }
+  });
+  return W;
+}
+function stimIdx(shape, ori, bx, by){
+  const idx = [];
+  if (shape === 'full'){ for (let k = 0; k < GX.length; k++) idx.push(k); return idx; }
+  const t = rad(ori), c = Math.cos(t), s = Math.sin(t);
+  for (let k = 0; k < GX.length; k++){
+    const dx = GX[k] - bx, dy = GY[k] - by;
+    if (shape === 'spot'){ if (dx * dx + dy * dy <= 0.25) idx.push(k); }
+    else { const a = dx * c + dy * s, b = -dx * s + dy * c; if (Math.abs(a) <= 3 && Math.abs(b) <= 0.3) idx.push(k); }
+  }
+  return idx;
+}
+const dot = (W, idx) => { let v = 0; for (let i = 0; i < idx.length; i++) v += W[idx[i]]; return v; };
+
+/* ---------- cortex: columns x sites ---------- */
+const NCOL = 8, ROWS = [
+  {y:118, layer:'2/3'}, {y:140, layer:'2/3'}, {y:166, layer:'4'}, {y:188, layer:'4'}, {y:218, layer:'5'}, {y:262, layer:'6'}
+];
+function jitter(c, r){ const v = Math.sin(c * 12.9898 + r * 78.233) * 43758.5453, j = ((v - Math.floor(v)) - 0.5) * 12; return c === 0 ? Math.abs(j) : j; }
+const cells = {};
+function getCell(c, r){
+  const key = c + ':' + r;
+  if (cells[key]) return cells[key];
+  const pref = ((c * 22.5 + jitter(c, r)) % 180 + 180) % 180;
+  const type = ROWS[r].layer === '4' ? 'simple' : 'complex';
+  const subs = type === 'simple' ? [simpleWeights(pref, 0)] : CX_OFF.map(o => simpleWeights(pref, o));
+  const opt = stimIdx('bar', pref, 0, 0);
+  const cell = {c, r, pref, type, layer:ROWS[r].layer, subs};
+  if (type === 'simple'){ cell.gain = 37 / (dot(subs[0], opt) - THR); }
+  else { const s = subs.reduce((a, W) => a + Math.max(0, dot(W, opt) - THR), 0); cell.gain = 38 / s; }
+  return cells[key] = cell;
+}
+function cellRate(cell, idx){
+  if (!idx.length) return cell.type === 'simple' ? 3 : 2;
+  if (cell.type === 'simple'){
+    const d = dot(cell.subs[0], idx);
+    return d < 0 ? 3 * Math.max(0, 1 + d / 0.25) : 3 + cell.gain * Math.max(0, d - THR);
+  }
+  let s = 0; for (const W of cell.subs) s += Math.max(0, dot(W, idx) - THR);
+  return 2 + cell.gain * s;
+}
+
+/* ---------- state ---------- */
+const st = {shape:'bar', ori:0, bx:0, by:0, light:true, sweep:false, sweepP:0, sweepDir:1,
+  rf:false, listen:false, map:false, cell:{c:2, r:2}, test:null, results:null, pen:null, penPts:null, penKind:null, flashUntil:0};
+let simT = 0, rate = 0;
+const spikes = [], lightLog = [];
+
+function currentStim(){
+  if (st.test){
+    const tr = st.test;
+    const on = tr.phaseT >= 0.4 && tr.phaseT < 1.4;
+    return {shape:'bar', ori:tr.oris[tr.i], bx:st.bx, by:st.by, on};
+  }
+  let bx = st.bx, by = st.by;
+  if (st.sweep && st.shape !== 'full'){ const t = rad(st.ori); bx += -Math.sin(t) * st.sweepP; by += Math.cos(t) * st.sweepP; }
+  return {shape:st.shape, ori:st.ori, bx, by, on: st.light || simT < st.flashUntil};
+}
+
+/* ---------- screen ---------- */
+const scr = $('screen'), sctx = scr.getContext('2d');
+const VX = 10, VY = 7.5;
+function scrSize(){ const dpr = window.devicePixelRatio || 1, w = scr.clientWidth, h = scr.clientHeight;
+  if (scr.width !== Math.round(w * dpr)){ scr.width = Math.round(w * dpr); scr.height = Math.round(h * dpr); }
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0); return {w, h, k: w / (2 * VX)}; }
+const toPx = (x, y, S) => [S.w / 2 + x * S.k, S.h / 2 - y * S.k];
+const handlePos = (stim) => { const t = rad(stim.ori); return [stim.bx + 3 * Math.cos(t), stim.by + 3 * Math.sin(t)]; };
+
+function drawScreen(stim){
+  const S = scrSize(), c = sctx;
+  c.fillStyle = rgb(COL.screen); c.fillRect(0, 0, S.w, S.h);
+  c.strokeStyle = rgb(COL['screen-line']); c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(S.w / 2, 0); c.lineTo(S.w / 2, S.h); c.moveTo(0, S.h / 2); c.lineTo(S.w, S.h / 2); c.stroke();
+  // receptive field overlay
+  if (st.rf){
+    const cell = getCell(st.cell.c, st.cell.r), t = rad(cell.pref), ux = Math.cos(t), uy = Math.sin(t), nx = -uy, ny = ux;
+    c.save(); c.translate(S.w / 2, S.h / 2); c.rotate(-t);
+    const k = S.k;
+    c.strokeStyle = rgb(COL.rf, .95); c.fillStyle = rgb(COL.rf, .95); c.lineWidth = 1.6;
+    c.font = `700 ${Math.max(11, k * .55)}px "Atkinson Hyperlegible", system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    if (cell.type === 'simple'){
+      c.strokeRect(-2.6 * k, -1.35 * k, 5.2 * k, 2.7 * k);
+      LGN_POS.forEach(s => {
+        c.setLineDash([4, 4]); c.beginPath(); c.arc(s * k, 0, 1.0 * k, 0, 2 * Math.PI); c.stroke(); c.setLineDash([]);
+        c.beginPath(); c.arc(s * k, 0, 0.42 * k, 0, 2 * Math.PI); c.stroke();
+        c.fillText('+', s * k, 1);
+        c.fillText('−', s * k, -0.95 * k); c.fillText('−', s * k, 0.95 * k);
+      });
+    } else {
+      c.strokeRect(-2.6 * k, -2.0 * k, 5.2 * k, 4.0 * k);
+      CX_OFF.forEach((o, i) => {
+        c.setLineDash([3, 5]); c.beginPath(); c.moveTo(-2.4 * k, -o * k); c.lineTo(2.4 * k, -o * k); c.stroke(); c.setLineDash([]);
+      });
+    }
+    c.restore();
+    c.fillStyle = rgb(COL.rf); c.font = '700 13px "Atkinson Hyperlegible", system-ui, sans-serif'; c.textAlign = 'right'; c.textBaseline = 'alphabetic';
+    c.fillText(cell.type === 'simple' ? 'Receptive field: 4 LGN center-surround inputs' : 'Receptive field: 7 simple-cell inputs (dashed)', S.w - 10, S.h - 10);
+  }
+  // stimulus
+  if (stim.on){
+    c.save(); c.shadowColor = 'rgba(255,255,255,.75)'; c.shadowBlur = 14; c.fillStyle = rgb(COL.stim);
+    if (stim.shape === 'full'){ c.shadowBlur = 0; c.fillStyle = 'rgba(255,255,255,.88)'; c.fillRect(0, 0, S.w, S.h); }
+    else if (stim.shape === 'spot'){ const [px, py] = toPx(stim.bx, stim.by, S); c.beginPath(); c.arc(px, py, 0.5 * S.k, 0, 2 * Math.PI); c.fill(); }
+    else { const [px, py] = toPx(stim.bx, stim.by, S); c.translate(px, py); c.rotate(-rad(stim.ori)); c.fillRect(-3 * S.k, -0.3 * S.k, 6 * S.k, 0.6 * S.k); }
+    c.restore();
+  } else if (stim.shape !== 'full' && !st.test){
+    // outline where the stimulus will appear
+    c.save(); c.strokeStyle = 'rgba(255,255,255,.45)'; c.setLineDash([5, 5]); c.lineWidth = 1.2;
+    const [px, py] = toPx(stim.bx, stim.by, S);
+    if (stim.shape === 'spot'){ c.beginPath(); c.arc(px, py, 0.5 * S.k, 0, 2 * Math.PI); c.stroke(); }
+    else { c.translate(px, py); c.rotate(-rad(stim.ori)); c.strokeRect(-3 * S.k, -0.3 * S.k, 6 * S.k, 0.6 * S.k); }
+    c.restore();
+  }
+  // rotation handle
+  if (stim.shape === 'bar' && !st.test){
+    const [hx, hy] = toPx(...handlePos(stim), S);
+    c.beginPath(); c.arc(hx, hy, 8, 0, 2 * Math.PI); c.fillStyle = rgb(COL.on); c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+  }
+  c.fillStyle = 'rgba(255,255,255,.7)'; c.font = '13px "Atkinson Hyperlegible", system-ui, sans-serif'; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  if (st.test) c.fillText(`Orientation test: ${st.test.oris[st.test.i]}°`, 10, 20);
+  else if (st.sweep) c.fillText('Sweeping', 10, 20);
+}
+
+// dragging
+let drag = null;
+function evDeg(e){ const r = scr.getBoundingClientRect(), k = r.width / (2 * VX); return [(e.clientX - r.left - r.width / 2) / k, -(e.clientY - r.top - r.height / 2) / k]; }
+scr.addEventListener('pointerdown', e => {
+  if (st.test) return;
+  const [x, y] = evDeg(e), r = scr.getBoundingClientRect(), k = r.width / (2 * VX);
+  const [hx, hy] = handlePos({ori:st.ori, bx:st.bx, by:st.by});
+  if (st.shape === 'bar' && Math.hypot(x - hx, y - hy) * k < 16) drag = {mode:'rot'};
+  else { drag = {mode:'move', dx:st.bx - x, dy:st.by - y}; if (Math.hypot(st.bx - x, st.by - y) > 3.5){ drag.dx = 0; drag.dy = 0; st.bx = x; st.by = y; } }
+  st.sweep = false; st.sweepP = 0; syncControls();
+  scr.setPointerCapture(e.pointerId); scr.classList.add('dragging');
+});
+scr.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const [x, y] = evDeg(e);
+  if (drag.mode === 'rot'){ let a = Math.atan2(y - st.by, x - st.bx) * 180 / Math.PI; st.ori = Math.round(((a % 180) + 180) % 180); }
+  else { st.bx = clamp(x + drag.dx, -VX + 0.5, VX - 0.5); st.by = clamp(y + drag.dy, -VY + 0.5, VY - 0.5); }
+  syncControls(); storyDirty = true;
+});
+['pointerup','pointercancel'].forEach(t => scr.addEventListener(t, () => { drag = null; scr.classList.remove('dragging'); }));
+scr.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight'){ e.preventDefault(); st.ori = ((st.ori + (e.key === 'ArrowLeft' ? 5 : -5)) % 180 + 180) % 180; syncControls(); storyDirty = true; }
+});
+
+/* ---------- live recording ---------- */
+const live = $('live'), lctx = live.getContext('2d');
+function drawLive(){
+  const dpr = window.devicePixelRatio || 1, W = live.clientWidth, Hh = live.clientHeight;
+  if (live.width !== Math.round(W * dpr)){ live.width = Math.round(W * dpr); live.height = Math.round(Hh * dpr); }
+  const c = lctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, Hh);
+  const win = 5, x = t => W - (simT - t) / win * W;
+  // light strip
+  c.fillStyle = rgb(COL.muted); c.font = '11px "Atkinson Hyperlegible", system-ui, sans-serif'; c.fillText('Stimulus', 2, 11);
+  c.fillStyle = rgb([242,190,34]);
+  lightLog.forEach(([t0, t1]) => { const a = Math.max(0, x(t0)), b = x(t1 == null ? simT : t1); if (b > 0) c.fillRect(a, 16, b - a, 8); });
+  c.strokeStyle = rgb(COL.line); c.beginPath(); c.moveTo(0, 30.5); c.lineTo(W, 30.5); c.stroke();
+  c.strokeStyle = rgb(COL.ink); c.lineWidth = 1.4; c.beginPath();
+  for (const t of spikes){ const xx = Math.round(x(t)) + 0.5; if (xx >= 0){ c.moveTo(xx, 40); c.lineTo(xx, Hh - 20); } }
+  c.stroke();
+  c.fillStyle = rgb(COL.muted); c.textAlign = 'right'; c.fillText('now', W - 2, Hh - 4); c.textAlign = 'left'; c.fillText('−5 s', 2, Hh - 4);
+}
+
+/* ---------- tuning test ---------- */
+const ORIS = [0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5];
+const TRIAL = 1.7;
+function startTest(){
+  st.sweep = false; st.sweepP = 0;
+  st.test = {oris:ORIS.slice(), i:0, phaseT:0, rows:ORIS.map(o => ({ori:o, spikes:[]}))};
+  st.results = st.test.rows;
+  syncControls(); drawTuning();
+}
+function finishTest(){
+  const rows = st.results;
+  rows.forEach(r => r.rate = r.spikes.filter(t => t >= 0.4 && t < 1.4).length / 1.0);
+  // doubled-angle vector average for preferred orientation
+  let sx = 0, sy = 0; rows.forEach(r => { sx += r.rate * Math.cos(rad(2 * r.ori)); sy += r.rate * Math.sin(rad(2 * r.ori)); });
+  st.estPref = Math.hypot(sx, sy) > 3 ? ((Math.atan2(sy, sx) * 90 / Math.PI) + 180) % 180 : null;
+  st.test = null; syncControls(); drawTuning(); storyDirty = true;
+}
+function drawIcon(c, x, y, s, o, filled){
+  c.save(); c.fillStyle = filled ? '#1E4F8C' : rgb(COL.line); c.fillRect(x - s / 2, y - s / 2, s, s);
+  c.translate(x, y); c.rotate(-rad(o)); c.fillStyle = '#fff'; c.fillRect(-s * 0.36, -s * 0.07, s * 0.72, s * 0.14); c.restore();
+}
+const tun = $('tuning'), tctx = tun.getContext('2d');
+function drawTuning(){
+  const dpr = window.devicePixelRatio || 1, W = tun.clientWidth, Hh = tun.clientHeight;
+  if (tun.width !== Math.round(W * dpr) || tun.height !== Math.round(Hh * dpr)){ tun.width = Math.round(W * dpr); tun.height = Math.round(Hh * dpr); }
+  const c = tctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, Hh);
+  const font = (w, s) => `${w} ${s}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+  const narrow = W < 520;
+  const rW = narrow ? W : W * 0.44, gap = 18;
+  // raster
+  const rx0 = 30, rx1 = rW - 6, ry0 = 22, rh = (Hh - ry0 - 30) / ORIS.length;
+  c.fillStyle = rgb(COL.ink); c.font = font(700, 12.5); c.fillText('Spikes for each orientation', 0, 13);
+  const tx = t => rx0 + t / TRIAL * (rx1 - rx0);
+  c.fillStyle = rgb([242,190,34], .22); c.fillRect(tx(0.4), ry0, tx(1.4) - tx(0.4), rh * ORIS.length);
+  ORIS.forEach((o, i) => {
+    const y = ry0 + i * rh;
+    drawIcon(c, 12, y + rh / 2, Math.min(20, rh - 4), o, true);
+    c.strokeStyle = rgb(COL.line); c.lineWidth = 1; c.beginPath(); c.moveTo(rx0, y + rh + 0.5); c.lineTo(rx1, y + rh + 0.5); c.stroke();
+    const row = st.results && st.results[i];
+    if (row){ c.strokeStyle = rgb(COL.ink); c.lineWidth = 1.3; c.beginPath();
+      row.spikes.forEach(t => { const xx = Math.round(tx(t)) + 0.5; c.moveTo(xx, y + 4); c.lineTo(xx, y + rh - 4); }); c.stroke(); }
+    if (st.test && st.test.i === i){ c.strokeStyle = rgb(COL.on); c.lineWidth = 2; c.strokeRect(rx0 - 2, y + 1, rx1 - rx0 + 4, rh - 2); }
+  });
+  c.fillStyle = rgb(COL.muted); c.font = font(400, 11); c.textAlign = 'center';
+  c.fillText('Stimulus on', (tx(0.4) + tx(1.4)) / 2, Hh - 14); c.textAlign = 'left';
+  if (!st.results){ c.fillStyle = rgb(COL.muted); c.font = font(400, 12.5); c.fillText('Press “Run orientation test”', rx0 + 8, ry0 + rh * 3.6); }
+  if (narrow) return;
+  // tuning curve
+  const px0 = rW + gap + 34, px1 = W - 8, py0 = 26, py1 = Hh - 46;
+  c.fillStyle = rgb(COL.ink); c.font = font(700, 12.5); c.fillText('Tuning curve', rW + gap, 13);
+  const done = st.results && st.results.every(r => r.rate != null);
+  const vals = st.results ? st.results.map(r => r.rate != null ? r.rate : (st.test ? r.spikes.filter(t => t >= 0.4 && t < 1.4).length : 0)) : [];
+  const ymax = Math.max(40, ...vals) * 1.1;
+  const X = o => px0 + o / 180 * (px1 - px0), Yv = v => py1 - v / ymax * (py1 - py0);
+  c.strokeStyle = rgb(COL.line); c.lineWidth = 1;
+  [0, 20, 40, 60, 80].filter(v => v <= ymax).forEach(v => { c.beginPath(); c.moveTo(px0, Yv(v) + .5); c.lineTo(px1, Yv(v) + .5); c.stroke();
+    c.fillStyle = rgb(COL.muted); c.font = font(400, 11); c.textAlign = 'right'; c.fillText(v, px0 - 5, Yv(v) + 4); });
+  c.save(); c.translate(rW + gap + 8, (py0 + py1) / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillStyle = rgb(COL.muted); c.fillText('spikes/s', 0, 0); c.restore();
+  [0, 45, 90, 135, 180].forEach(o => drawIcon(c, X(o), py1 + 16, 20, o, true));
+  c.textAlign = 'center'; c.fillStyle = rgb(COL.muted); c.fillText('Stimulus orientation', (px0 + px1) / 2, Hh - 4); c.textAlign = 'left';
+  if (st.results){
+    const pts = st.results.map((r, i) => [r.ori, vals[i]]).filter((p, i) => done || (st.test && i < st.test.i));
+    if (done) pts.push([180, vals[0]]);
+    if (pts.length > 1){
+      c.strokeStyle = rgb(COL.ink); c.lineWidth = 2; c.beginPath();
+      // Catmull-Rom smoothing
+      const P = pts.map(p => [X(p[0]), Yv(p[1])]);
+      c.moveTo(P[0][0], P[0][1]);
+      for (let i = 0; i < P.length - 1; i++){
+        const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
+        c.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, Math.min(py1, p1[1] + (p2[1] - p0[1]) / 6), p2[0] - (p3[0] - p1[0]) / 6, Math.min(py1, p2[1] - (p3[1] - p1[1]) / 6), p2[0], p2[1]);
+      }
+      c.stroke();
+    }
+    pts.forEach(p => { c.beginPath(); c.arc(X(p[0]), Yv(p[1]), 4, 0, 2 * Math.PI); c.fillStyle = rgb(COL.on); c.fill(); });
+    if (done && st.estPref != null){
+      c.setLineDash([4, 4]); c.strokeStyle = rgb(COL.on); c.beginPath(); c.moveTo(X(st.estPref), py0); c.lineTo(X(st.estPref), py1); c.stroke(); c.setLineDash([]);
+      c.fillStyle = rgb(COL.on); c.font = font(700, 12); c.textAlign = X(st.estPref) > px1 - 70 ? 'right' : 'left';
+      c.fillText(`prefers ≈${Math.round(st.estPref)}°`, X(st.estPref) + (c.textAlign === 'right' ? -5 : 5), py0 + 10); c.textAlign = 'left';
+    }
+  }
+}
+
+/* ---------- cortex ---------- */
+const CX0 = 60, CW = 48, TOP = 90, BOT = 290, SK = 36;
+const colX = c => CX0 + c * CW + CW / 2;
+function buildCortex(){
+  const g = $('cxStatic'); g.innerHTML = '';
+  const x1 = CX0 + NCOL * CW;
+  // faces
+  for (let c = 0; c < NCOL; c++){
+    const xa = CX0 + c * CW, xb = xa + CW, pref = c * 22.5;
+    const fillTop = st.map ? oriHue(pref) : 'var(--cortex)';
+    el('path', {class:'face', d:`M${xa} ${TOP} L${xb} ${TOP} L${xb + SK} ${TOP - SK} L${xa + SK} ${TOP - SK} Z`, fill:fillTop}, g);
+    el('rect', {class:'face', x:xa, y:TOP, width:CW, height:BOT - TOP, fill:'var(--cortex)'}, g);
+    if (st.map){
+      el('rect', {x:xa, y:TOP, width:CW, height:BOT - TOP, fill:oriHue(pref), opacity:.28}, g);
+      const cx = xa + CW / 2 + SK / 2, cy = TOP - SK / 2, t = rad(pref);
+      el('line', {x1:cx - 11 * Math.cos(t), y1:cy + 11 * Math.sin(t) * .55, x2:cx + 11 * Math.cos(t), y2:cy - 11 * Math.sin(t) * .55, stroke:'#fff', 'stroke-width':4, 'stroke-linecap':'round'}, g);
+    }
+  }
+  el('path', {class:'face', d:`M${x1} ${TOP} L${x1 + SK} ${TOP - SK} L${x1 + SK} ${BOT - SK} L${x1} ${BOT} Z`, fill:'var(--cortex)', opacity:.85}, g);
+  // layers
+  const LY = [[90,'1'],[104,'2/3'],[152,'4'],[200,'5'],[236,'6']];
+  LY.forEach(([y, n], i) => {
+    if (i > 0){ el('line', {x1:CX0, y1:y, x2:x1, y2:y, stroke:'var(--cortex-line)', 'stroke-dasharray':'5 4'}, g);
+      el('line', {x1:x1, y1:y, x2:x1 + SK, y2:y - SK, stroke:'var(--cortex-line)', 'stroke-dasharray':'5 4'}, g); }
+    const yn = i < LY.length - 1 ? LY[i + 1][0] : BOT;
+    const t = el('text', {x:CX0 - 8, y:(y + yn) / 2 + 4, class:'t-head', 'text-anchor':'end'}, g); t.textContent = n;
+  });
+  const lt = el('text', {x:10, y:TOP - 20, class:'t-lab'}, g); lt.textContent = 'Layer';
+  for (let c = 0; c < NCOL; c++){ const t = el('text', {x:colX(c), y:BOT + 18, class:'t-lab', 'text-anchor':'middle'}, g); t.textContent = c + 1; }
+  const ct = el('text', {x:CX0 + NCOL * CW / 2, y:BOT + 34, class:'t-lab', 'text-anchor':'middle'}, g); ct.textContent = 'Column';
+}
+function renderCortex(){
+  buildCortex();
+  const g = $('cxCells'); g.innerHTML = '';
+  for (let c = 0; c < NCOL; c++) ROWS.forEach((row, r) => {
+    const cell = getCell(c, r);
+    const d = el('circle', {class:'cellDot' + (cell.type === 'simple' ? ' simple' : ''), cx:colX(c), cy:row.y, r:6.5, tabindex:0, role:'button',
+      'aria-label':`Record from the layer ${row.layer} ${cell.type} cell in column ${c + 1}`}, g);
+    el('title', {}, d).textContent = `Column ${c + 1}, layer ${row.layer}: ${cell.type} cell`;
+    const act = () => { if (st.pen) return; selectCell(c, r); };
+    d.addEventListener('click', act);
+    d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+  });
+  renderElectrode();
+}
+function renderElectrode(){
+  const g = $('cxElec'); g.innerHTML = '';
+  const {c, r} = st.cell, x = colX(c), y = ROWS[r].y;
+  if (st.penKind === 'obl' && st.penPts){
+    const P = st.penPts;
+    el('line', {class:'electrode', x1:P[0].x - 70, y1:P[0].y - 60, x2:P[P.length - 1].x + 8, y2:P[P.length - 1].y + 4}, g);
+  } else if (st.penKind === 'vert' && st.penPts){
+    el('line', {class:'electrode', x1:st.penPts[0].x, y1:8, x2:st.penPts[0].x, y2:ROWS[ROWS.length - 1].y + 10}, g);
+  } else {
+    el('line', {class:'electrode', x1:x, y1:8, x2:x, y2:y}, g);
+  }
+  el('circle', {class:'sel', cx:x, cy:y, r:11}, g);
+  if (st.penPts) st.penPts.forEach((p, i) => {
+    el('circle', {cx:p.x, cy:p.y, r:8, fill:'var(--ink)'}, g);
+    const t = el('text', {class:'t-site', x:p.x, y:p.y + 3.5}, g); t.textContent = 'ABCDEF'[i];
+  });
+}
+function selectCell(c, r){
+  st.cell = {c, r}; st.results = null; st.estPref = null; st.test = null;
+  renderElectrode(); drawTuning(); storyDirty = true; syncControls();
+}
+
+/* ---------- penetrations ---------- */
+function measurePref(cell){
+  let sx = 0, sy = 0;
+  for (let o = 0; o < 180; o += 7.5){
+    const r = cellRate(cell, stimIdx('bar', o, 0, 0)) + (Math.random() - 0.5) * 4;
+    sx += Math.max(0, r) * Math.cos(rad(2 * o)); sy += Math.max(0, r) * Math.sin(rad(2 * o));
+  }
+  return ((Math.atan2(sy, sx) * 90 / Math.PI) + 180) % 180;
+}
+function runPen(kind){
+  if (st.pen) return;
+  let sites;
+  if (kind === 'vert'){ const c = st.cell.c; sites = ROWS.map((row, r) => ({c, r, x:colX(c), y:row.y})); }
+  else {
+    const c0 = Math.min(st.cell.c, NCOL - 6);
+    sites = [];
+    for (let i = 0; i < 6; i++){ const x = colX(c0 + i); sites.push({c:c0 + i, r:i < 3 ? 0 : 1, x, y:114 + i * 5.5}); }
+  }
+  st.penKind = kind; st.penPts = []; st.penData = [];
+  st.pen = {sites, i:0, t:0};
+  syncControls(); drawPen();
+}
+function stepPen(dt){
+  const p = st.pen; p.t += dt;
+  if (p.t < 0.55) return;
+  p.t = 0;
+  const s = p.sites[p.i];
+  st.cell = {c:s.c, r:s.r};
+  st.penPts.push({x:s.x, y:s.y});
+  st.penData.push({site:'ABCDEF'[p.i], pref:measurePref(getCell(s.c, s.r))});
+  st.results = null; st.estPref = null;
+  renderElectrode(); drawPen(); drawTuning(); syncControls(); storyDirty = true;
+  p.i++;
+  if (p.i >= p.sites.length){ st.pen = null; syncControls(); }
+}
+function drawPen(){
+  const g = $('penSvg'); g.innerHTML = '';
+  const x0 = 70, x1 = 500, y0 = 22, y1 = 150;
+  const t = (x, y, s, cls, a) => { const e = el('text', {x, y, class:cls || 't-lab', 'text-anchor':a || 'middle'}, g); e.textContent = s; };
+  el('rect', {x:x0, y:y0, width:x1 - x0, height:y1 - y0, fill:'none', stroke:'var(--line)'}, g);
+  t(x0, 14, st.penKind === 'obl' ? 'Oblique penetration: orientation preference along the track' : st.penKind === 'vert' ? 'Vertical penetration: orientation preference along the track' : 'Run a penetration to plot orientation preference along the electrode track', 't-head', 'start');
+  [0, 45, 90, 135, 180].forEach(o => { const y = y1 - o / 180 * (y1 - y0);
+    el('line', {x1:x0, y1:y, x2:x1, y2:y, stroke:'var(--line)', 'stroke-dasharray':'2 4'}, g); t(x0 - 8, y + 4, o + '°', 't-lab', 'end'); });
+  const ytxt = el('text', {x:16, y:(y0 + y1) / 2, class:'t-lab', 'text-anchor':'middle', transform:`rotate(-90 16 ${(y0 + y1) / 2})`}, g); ytxt.textContent = 'Preferred orientation';
+  t((x0 + x1) / 2, 184, 'Distance along electrode track');
+  const X = i => x0 + 30 + i * (x1 - x0 - 60) / 5, Y = o => y1 - o / 180 * (y1 - y0);
+  'ABCDEF'.split('').forEach((s, i) => t(X(i), y1 + 16, s));
+  const D = (st.penData || []).map(d => ({...d}));
+  // unwrap orientation (180° = 0°) so neighbouring sites plot next to each other
+  for (let i = 0; i < D.length; i++){
+    const ref = i === 0 ? 90 : D[i - 1].pref;
+    while (D[i].pref - ref > 90) D[i].pref -= 180;
+    while (D[i].pref - ref < -90) D[i].pref += 180;
+    D[i].pref = clamp(D[i].pref, 0, 180);
+  }
+  if (D.length > 1){
+    const n = D.length, mx = (n - 1) / 2, my = D.reduce((a, d) => a + d.pref, 0) / n;
+    let num = 0, den = 0; D.forEach((d, i) => { num += (i - mx) * (d.pref - my); den += (i - mx) * (i - mx); });
+    const b = den ? num / den : 0, a = my - b * mx;
+    if (D.length === 6) el('line', {x1:X(0), y1:Y(a), x2:X(5), y2:Y(a + 5 * b), stroke:'var(--muted)', 'stroke-dasharray':'6 5', 'stroke-width':1.5}, g);
+  }
+  D.forEach((d, i) => {
+    el('circle', {cx:X(i), cy:Y(d.pref), r:9, fill:'var(--ink)'}, g);
+    const e = el('text', {class:'t-site', x:X(i), y:Y(d.pref) + 3.5}, g); e.textContent = d.site;
+  });
+}
+
+/* ---------- sound ---------- */
+let actx = null, noise = null;
+function ensureAudio(){
+  if (actx){ if (actx.state === 'suspended') actx.resume(); return; }
+  try { actx = new (window.AudioContext || window.webkitAudioContext)();
+    const n = Math.floor(actx.sampleRate * 0.004); noise = actx.createBuffer(1, n, actx.sampleRate);
+    const d = noise.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+  } catch (e) { actx = null; }
+}
+function click(){ if (!actx || !st.listen) return; const s = actx.createBufferSource(); s.buffer = noise;
+  const g = actx.createGain(); g.gain.value = 0.5; s.connect(g); g.connect(actx.destination); s.start(); }
+
+/* ---------- story ---------- */
+let storyDirty = true;
+function renderStory(stimRate){
+  const cell = getCell(st.cell.c, st.cell.r);
+  const known = st.map || st.rf || st.estPref != null;
+  const prefTxt = known ? `${Math.round(st.map || st.rf ? cell.pref : st.estPref)}°` : 'unknown (run an orientation test to find it)';
+  let html = `<h3>Recording: layer ${cell.layer} ${cell.type} cell, column ${cell.c + 1}</h3>`;
+  html += `<p class="muted">Preferred orientation: ${prefTxt}</p>`;
+  if (cell.type === 'simple'){
+    html += `<p>A simple cell sums the inputs of 3–4 LGN neurons whose center-surround receptive fields line up in a row (spatial summation). A bar lying along that row covers all the ON centers at once and drives the cell above threshold. Rotate the bar and it crosses the row instead, covering only part of one or two centers.</p>`;
+  } else {
+    html += `<p>A complex cell sums several simple cells that share an orientation preference but look at slightly different positions. It still needs the right orientation, but it fires wherever the bar falls within its larger receptive field, and it has no separate ON and OFF zones.</p>`;
+  }
+  // live feedback
+  const s = currentStim(), spont = cell.type === 'simple' ? 3 : 2;
+  let now;
+  if (st.pen) now = 'Recording from each site along the electrode in turn.';
+  else if (st.test) now = 'Running the orientation test: the bar flashes at each orientation for 1 s.';
+  else if (!s.on) now = 'The light is off, so the cell fires only at its low spontaneous rate.';
+  else if (s.shape === 'full') now = 'Full-field light hits the centers and surrounds of every LGN input equally, so excitation and inhibition cancel and the cell barely responds.';
+  else if (s.shape === 'spot') now = cell.type === 'simple'
+    ? 'A spot covers at most one LGN center, which is not enough summed input to reach threshold: spots of light don’t activate simple cells.'
+    : 'A spot drives none of the simple-cell inputs past threshold, so the complex cell stays near its spontaneous rate.';
+  else {
+    const off = Math.abs(-Math.sin(rad(cell.pref)) * s.bx + Math.cos(rad(cell.pref)) * s.by);
+    const along = Math.abs(Math.cos(rad(cell.pref)) * s.bx + Math.sin(rad(cell.pref)) * s.by);
+    const dOri = angDiff(s.ori, cell.pref);
+    if (stimRate > spont + 15) now = 'Strong response: the bar matches this cell’s preferred orientation and falls on its receptive field.';
+    else if (along > 4.5 || off > 3) now = 'The bar is outside this cell’s receptive field. Drag it back toward the center of the screen.';
+    else if (dOri > 25) now = `Weak response: the bar is about ${Math.round(dOri / 5) * 5}° away from the preferred orientation, so it crosses the receptive field instead of lying along it.`;
+    else if (cell.type === 'simple' && stimRate < spont - 0.5) now = 'Suppressed below the spontaneous rate: the orientation is right, but the bar sits on an inhibitory flank (the LGN surrounds). Simple cells are sensitive to position.';
+    else if (cell.type === 'simple') now = 'The orientation is close, but the bar is not centered on the row of ON centers. Simple cells are sensitive to position.';
+    else now = 'Moderate response: try fine-tuning the orientation.';
+  }
+  html += `<p class="now">${now}</p>`;
+  if (st.penKind && !st.pen && st.penData && st.penData.length === 6){
+    html += st.penKind === 'vert'
+      ? '<p><b>Vertical penetration.</b> Every neuron from layer 2/3 down to layer 6 prefers about the same orientation: they belong to one orientation column.</p>'
+      : '<p><b>Oblique penetration.</b> Moving sideways through layer 2/3 crosses neighboring columns, and preferred orientation shifts smoothly from one to the next. The full set of orientations repeats about every millimeter of cortex, so every point in visual space is covered by all orientations.</p>';
+  }
+  $('story').innerHTML = html;
+}
+
+/* ---------- controls ---------- */
+function syncControls(){
+  document.querySelectorAll('[data-shape]').forEach(b => b.setAttribute('aria-pressed', b.dataset.shape === st.shape ? 'true' : 'false'));
+  document.querySelectorAll('[data-listen]').forEach(b => b.setAttribute('aria-pressed', (b.dataset.listen === 'on') === st.listen ? 'true' : 'false'));
+  $('ori').value = Math.round(st.ori) % 180; $('oriTxt').textContent = Math.round(st.ori) % 180 + '°';
+  $('lightBtn').setAttribute('aria-pressed', st.light ? 'true' : 'false'); $('lightBtn').textContent = st.light ? 'Light on' : 'Light off';
+  $('sweepBtn').setAttribute('aria-pressed', st.sweep ? 'true' : 'false');
+  $('rfBtn').setAttribute('aria-pressed', st.rf ? 'true' : 'false');
+  $('mapBtn').setAttribute('aria-pressed', st.map ? 'true' : 'false');
+  const busy = !!st.test || !!st.pen;
+  ['testBtn','vertBtn','oblBtn'].forEach(id => $(id).disabled = busy);
+  $('testBtn').textContent = st.test ? 'Testing…' : 'Run orientation test';
+  const cell = getCell(st.cell.c, st.cell.r);
+  $('whoTxt').textContent = `Layer ${cell.layer} ${cell.type} cell, column ${cell.c + 1}`;
+}
+document.querySelectorAll('[data-shape]').forEach(b => b.addEventListener('click', () => { st.shape = b.dataset.shape; syncControls(); storyDirty = true; }));
+document.querySelectorAll('[data-listen]').forEach(b => b.addEventListener('click', () => { st.listen = b.dataset.listen === 'on'; if (st.listen) ensureAudio(); syncControls(); }));
+$('ori').addEventListener('input', e => { st.ori = +e.target.value; syncControls(); storyDirty = true; });
+$('lightBtn').addEventListener('click', () => { st.light = !st.light; syncControls(); storyDirty = true; });
+$('flashBtn').addEventListener('click', () => { st.light = false; st.flashUntil = simT + 1; syncControls(); storyDirty = true; });
+$('sweepBtn').addEventListener('click', () => { st.sweep = !st.sweep; st.sweepP = -5; st.sweepDir = 1; if (st.sweep) st.light = true; syncControls(); storyDirty = true; });
+$('centerBtn').addEventListener('click', () => { st.bx = 0; st.by = 0; st.sweep = false; syncControls(); storyDirty = true; });
+$('rfBtn').addEventListener('click', () => { st.rf = !st.rf; syncControls(); storyDirty = true; });
+$('mapBtn').addEventListener('click', () => { st.map = !st.map; renderCortex(); syncControls(); storyDirty = true; });
+$('testBtn').addEventListener('click', startTest);
+$('vertBtn').addEventListener('click', () => runPen('vert'));
+$('oblBtn').addEventListener('click', () => runPen('obl'));
+
+/* ---------- loop ---------- */
+let last = performance.now(), wasOn = false, lastSpike = -1;
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  simT += dt;
+  if (st.sweep){ st.sweepP += st.sweepDir * 4 * dt; if (st.sweepP > 5){ st.sweepP = 5; st.sweepDir = -1; } if (st.sweepP < -5){ st.sweepP = -5; st.sweepDir = 1; } }
+  if (st.pen) stepPen(dt);
+  const stim = currentStim();
+  const cell = getCell(st.cell.c, st.cell.r);
+  rate = cellRate(cell, stim.on ? stimIdx(stim.shape, stim.ori, stim.bx, stim.by) : []);
+  // light log
+  if (stim.on && !wasOn) lightLog.push([simT, null]);
+  if (!stim.on && wasOn && lightLog.length) lightLog[lightLog.length - 1][1] = simT;
+  wasOn = stim.on;
+  while (lightLog.length && lightLog[0][1] != null && lightLog[0][1] < simT - 6) lightLog.shift();
+  // spikes (substeps for accuracy)
+  const n = Math.ceil(dt / 0.002), h = dt / n;
+  for (let i = 0; i < n; i++){
+    const tt = simT - dt + (i + 1) * h;
+    if (Math.random() < rate * h && tt - lastSpike > 0.003){
+      lastSpike = tt; spikes.push(tt); click();
+      if (st.test) st.test.rows[st.test.i].spikes.push(st.test.phaseT);
+    }
+  }
+  while (spikes.length && spikes[0] < simT - 5.2) spikes.shift();
+  if (st.test){
+    st.test.phaseT += dt;
+    if (st.test.phaseT >= TRIAL){ st.test.i++; st.test.phaseT = 0; if (st.test.i >= ORIS.length) finishTest(); }
+    drawTuning();
+  }
+  drawScreen(currentStim());
+  drawLive();
+  $('rateTxt').innerHTML = `${Math.round(rate)} <small>spikes/s</small>`;
+  if (storyDirty || (st.sweep && Math.random() < 0.1)){ storyDirty = false; renderStory(rate); }
+  requestAnimationFrame(frame);
+}
+window.addEventListener('resize', drawTuning);
+renderCortex(); drawPen(); syncControls(); drawTuning();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
