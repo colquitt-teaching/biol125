@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GSL8D700XD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GSL8D700XD');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Visual pathway lesions and visual field loss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#E8ECF1; --panel:#FFFFFF; --ink:#16202D; --muted:#556174; --line:#CDD5DF; --focus:#1D6BD0; --link:#1D6BD0;
+  --brain:#EFE3CF; --brain-line:#C9B394; --mid:#F7EFE0;
+  --rvf:#E07B2E; --lvf:#8A5CC6; --lgn:#2F6FC0; --v1:#E9B9C9;
+  --seen:#9DB3D8; --blind:#0B0B0B; --lesion:#111111; --good:#2E8B4E; --bad:#C2410C;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF; --link:#4D9CFF;
+    --brain:#3A3229; --brain-line:#5E4F3E; --mid:#4A4034;
+    --rvf:#FF9A4D; --lvf:#B58CF0; --lgn:#5B9BF0; --v1:#8A5468;
+    --seen:#7F9CCF; --blind:#000000; --lesion:#F2EDE4; --good:#4CC774; --bad:#FF8A4D;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF; --link:#4D9CFF;
+  --brain:#3A3229; --brain-line:#5E4F3E; --mid:#4A4034;
+  --rvf:#FF9A4D; --lvf:#B58CF0; --lgn:#5B9BF0; --v1:#8A5468;
+  --seen:#7F9CCF; --blind:#000000; --lesion:#F2EDE4; --good:#4CC774; --bad:#FF8A4D;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.5}
+.wrap{max-width:1420px;margin:0 auto;padding:22px clamp(12px,3vw,32px) 40px}
+.back{display:inline-block;margin:0 0 10px;color:var(--link);font-weight:700;text-decoration:none}
+.back:hover{text-decoration:underline}
+header h1{font-size:clamp(1.55rem,2.7vw,2.2rem);line-height:1.15;margin:0 0 6px;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:84ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;margin:18px 0 14px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lbl{font-weight:700;font-size:.95rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button,.btn{font:inherit;font-size:.93rem;border:0;background:transparent;color:var(--ink);
+  padding:7px 12px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.btn{border:1px solid var(--line);border-radius:8px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.btn.primary{background:var(--ink);color:var(--panel);font-weight:700}
+button:focus-visible,[tabindex]:focus-visible,canvas:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.main{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1020px){.main{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px}
+.panel h2{font-size:1.08rem;margin:0 0 4px}
+.hint{margin:0 0 8px;font-size:.88rem;color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:16px}
+#brain{display:block;width:100%;height:auto;max-height:900px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fields figure,.views figure{margin:0}
+.fields figcaption,.views figcaption{font-weight:700;font-size:.95rem;text-align:center}
+.tn{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted);padding:0 6%}
+.fields canvas{display:block;width:100%;aspect-ratio:4/3;cursor:crosshair}
+.views{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:10px;align-items:end}
+.views canvas{display:block;width:100%;aspect-ratio:4/3}
+@media (max-width:620px){.views{grid-template-columns:1fr 1fr}.views figure:last-child{grid-column:1 / -1}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block;border:1px solid var(--line)}
+.ln{width:18px;height:4px;border-radius:2px;display:inline-block}
+#probeTxt{font-size:.9rem;margin:8px 0 0;min-height:1.4em}
+#story h3{font-size:1.06rem;margin:0 0 4px}
+#story .term{font-weight:700;color:var(--muted);margin:0 0 8px}
+#story p{margin:0 0 8px;font-size:.95rem}
+#story .clin{color:var(--muted);font-size:.9rem}
+#story .fb{padding:9px 12px;border-radius:0 8px 8px 0;border-left:4px solid var(--line);background:color-mix(in srgb,var(--ink) 5%,transparent)}
+#story .fb.ok{border-left-color:var(--good)}
+#story .fb.no{border-left-color:var(--bad)}
+.note{margin:18px 2px 0;font-size:.86rem;color:var(--muted);max-width:115ch}
+/* svg */
+.brain{fill:var(--brain);stroke:var(--brain-line);stroke-width:2}
+.fiber{fill:none;stroke-width:3.4;stroke-linecap:round;opacity:.9}
+.rad{fill:none;stroke-width:3;stroke-linecap:round;opacity:.75}
+.hl{fill:none;stroke-width:6.5;stroke-linecap:round;stroke-dasharray:10 7;animation:flow .9s linear infinite}
+.hl-halo{fill:none;stroke:var(--panel);stroke-width:11;stroke-linecap:round;opacity:.9}
+@keyframes flow{to{stroke-dashoffset:-17}}
+.t-lab{font-size:12px;fill:var(--muted)}
+.t-head{font-size:13px;font-weight:700;fill:var(--ink)}
+.t-letter{font-size:12px;font-weight:700;fill:var(--ink);text-anchor:middle}
+.site{cursor:pointer}
+.site .ring{fill:var(--panel);fill-opacity:.55;stroke:var(--ink);stroke-width:1.4;stroke-dasharray:3 3}
+.site:hover .ring,.site:focus .ring{stroke-width:2.6;stroke-dasharray:none}
+.site .bar{fill:var(--lesion)}
+.block circle{fill:var(--panel);stroke:var(--lesion);stroke-width:2.5}
+.block path{stroke:var(--lesion);stroke-width:3;stroke-linecap:round}
+@media (prefers-reduced-motion: reduce){.hl{animation:none;stroke-dasharray:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">All BIOL125 simulations</a>
+    <h1>Visual pathway lesions and visual field loss</h1>
+    <p>Click a site along the visual pathway to place a lesion and see how each eye’s visual field changes, and what the patient sees. Click a point in a visual field to trace its route to the cortex. In “Test yourself” mode, work backward from the field loss to the lesion.</p>
+  </header>
+
+  <div class="toolbar" role="group" aria-label="Controls">
+    <div class="group">
+      <span class="lbl" id="modeLbl">Mode</span>
+      <div class="seg" role="group" aria-labelledby="modeLbl">
+        <button data-mode="explore">Explore</button>
+        <button data-mode="quiz">Test yourself</button>
+      </div>
+    </div>
+    <button class="btn" id="clearBtn">Clear all lesions</button>
+    <div class="group">
+      <span class="lbl" id="presetLbl">Slide examples</span>
+      <div class="seg" role="group" aria-labelledby="presetLbl">
+        <button data-preset="nerve-R">a</button>
+        <button data-preset="chiasm">b</button>
+        <button data-preset="tract-R">c</button>
+        <button data-preset="meyer-R">d</button>
+        <button data-preset="v1-R">e</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <section class="panel" aria-label="Visual pathway">
+      <h2>Visual pathway, viewed from below</h2>
+      <p class="hint" id="brainHint">Click a dashed circle to add or remove a lesion. You can combine several.</p>
+      <svg id="brain" viewBox="0 0 460 590" role="img" aria-label="Eyes, optic nerves, chiasm, optic tracts, lateral geniculate nuclei, optic radiations and visual cortex">
+        <g id="bStatic"></g><g id="bHL"></g><g id="bSites"></g>
+      </svg>
+      <div class="legend">
+        <span><i class="ln" style="background:var(--lvf)"></i>Carries the left visual field</span>
+        <span><i class="ln" style="background:var(--rvf)"></i>Carries the right visual field</span>
+      </div>
+    </section>
+
+    <div class="stack">
+      <section class="panel" aria-label="Visual fields">
+        <h2>Visual fields</h2>
+        <p class="hint">Plotted as the patient sees them. Click any point to trace its route.</p>
+        <div class="fields">
+          <figure><figcaption>Left eye visual field</figcaption><div class="tn"><span>Temporal</span><span>Nasal</span></div><canvas id="fL" tabindex="0" aria-label="Left eye visual field"></canvas></figure>
+          <figure><figcaption>Right eye visual field</figcaption><div class="tn"><span>Nasal</span><span>Temporal</span></div><canvas id="fR" tabindex="0" aria-label="Right eye visual field"></canvas></figure>
+        </div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--seen)"></i>See</span>
+          <span><i class="sw" style="background:var(--blind)"></i>Blind</span>
+        </div>
+        <p id="probeTxt" aria-live="polite"></p>
+      </section>
+
+      <section class="panel" aria-label="What the patient sees">
+        <h2>What the patient sees</h2>
+        <p class="hint">Fixating on the red dot in the center.</p>
+        <div class="views">
+          <figure><canvas id="vL" aria-label="View through the left eye"></canvas><figcaption>Left eye</figcaption></figure>
+          <figure><canvas id="vR" aria-label="View through the right eye"></canvas><figcaption>Right eye</figcaption></figure>
+          <figure><canvas id="vB" aria-label="View with both eyes open"></canvas><figcaption>Both eyes open</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Explanation">
+        <div id="story" aria-live="polite"></div>
+      </section>
+    </div>
+  </div>
+
+  <p class="note">Simplified, illustrative model. Field shapes are approximate (each eye sees about 90° temporally and 60° nasally). The central region spared after a visual cortex lesion (macular sparing) is shown as about 6° in radius; its size varies between patients. Only the retina → LGN → V1 pathway is modeled.</p>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- colors ---------- */
+let COL = {};
+function hex(h){ h = h.trim().replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i, i+2), 16)); }
+function readColors(){ const cs = getComputedStyle(document.documentElement);
+  ['seen','blind','panel','ink','muted','line'].forEach(k => COL[k] = hex(cs.getPropertyValue('--' + k))); }
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); renderAll(); });
+
+/* ---------- sites ---------- */
+const SITES = {
+  'nerve-L': {type:'nerve',  side:'L', x:193, y:158, ang:-37, name:'left optic nerve'},
+  'nerve-R': {type:'nerve',  side:'R', x:267, y:158, ang:37,  name:'right optic nerve', letter:'a'},
+  'chiasm':  {type:'chiasm', side:null, x:230, y:204, ang:90, name:'optic chiasm', letter:'b'},
+  'tract-L': {type:'tract',  side:'L', x:193, y:252, ang:35,  name:'left optic tract'},
+  'tract-R': {type:'tract',  side:'R', x:267, y:252, ang:-35, name:'right optic tract', letter:'c'},
+  'lgn-L':   {type:'lgn',    side:'L', x:160, y:300, ang:0,   name:'left LGN'},
+  'lgn-R':   {type:'lgn',    side:'R', x:300, y:300, ang:0,   name:'right LGN'},
+  'meyer-L': {type:'meyer',  side:'L', x:94,  y:300, ang:0,   name:'left Meyer’s loop'},
+  'meyer-R': {type:'meyer',  side:'R', x:366, y:300, ang:0,   name:'right Meyer’s loop', letter:'d'},
+  'dorsal-L':{type:'dorsal', side:'L', x:176, y:395, ang:-10, name:'left dorsal (parietal) radiation'},
+  'dorsal-R':{type:'dorsal', side:'R', x:284, y:395, ang:10,  name:'right dorsal (parietal) radiation'},
+  'v1-L':    {type:'v1',     side:'L', x:203, y:503, ang:0,   name:'left visual cortex (V1)'},
+  'v1-R':    {type:'v1',     side:'R', x:257, y:503, ang:0,   name:'right visual cortex (V1)', letter:'e'}
+};
+const SIDE = {L:'left', R:'right'};
+const st = {mode:'explore', lesions:new Set(['tract-R']), probe:null, quiz:null, score:{right:0, tries:0}};
+
+/* ---------- model ---------- */
+// field extent (degrees) for each eye; x > 0 is the patient's right visual field
+function fieldR(eye, x, y){
+  const temporalRight = eye === 'R';
+  const rx = (x >= 0) === temporalRight ? 90 : 60;
+  let ry = y >= 0 ? 55 : 70;
+  // nose shadow: lower nasal quadrant is cut in a bit
+  if ((x >= 0) !== temporalRight && y < 0) ry = 58;
+  const a = Math.atan2(y, x);
+  return 1 / Math.sqrt((Math.cos(a) / rx) ** 2 + (Math.sin(a) / ry) ** 2);
+}
+const inField = (eye, x, y) => Math.hypot(x, y) <= fieldR(eye, x, y);
+const MACULA = 6;
+function route(eye, x, y, L){
+  // returns the list of structures a point passes through, and the first lesioned one
+  const S = x < 0 ? 'R' : 'L';                 // hemisphere that receives this half of the field
+  const crosses = (eye === 'L') !== (x >= 0) ? false : true;
+  // left eye: right field (x>=0) lands on temporal retina -> does not cross; right eye: right field lands on nasal retina -> crosses
+  const cross = eye === 'L' ? x < 0 : x >= 0;
+  const steps = ['nerve-' + eye];
+  if (cross) steps.push('chiasm');
+  steps.push('tract-' + S, 'lgn-' + S, (y >= 0 ? 'meyer-' : 'dorsal-') + S, 'v1-' + S);
+  let block = null;
+  for (const s of steps){
+    if (!L.has(s)) continue;
+    if (s.startsWith('v1') && Math.hypot(x, y) < MACULA) continue;   // macular sparing
+    block = s; break;
+  }
+  return {steps, block, cross, S};
+}
+const seen = (eye, x, y, L) => !route(eye, x, y, L).block;
+
+/* ---------- brain drawing ---------- */
+const FIB = {
+  'L-T': {d:'M150 117 C158 148 204 178 218 200 C222 212 205 235 185 262 C176 276 167 290 160 300', col:'rvf'},
+  'L-N': {d:'M178 120 C186 150 214 178 226 198 C232 206 238 214 248 230 C262 250 281 278 300 300', col:'lvf'},
+  'R-N': {d:'M282 120 C274 150 246 178 234 198 C228 206 222 214 212 230 C198 250 179 278 160 300', col:'rvf'},
+  'R-T': {d:'M310 117 C302 148 256 178 242 200 C238 212 255 235 275 262 C284 276 293 290 300 300', col:'lvf'}
+};
+const RAD = {
+  'meyer-L':  {d:'M160 300 C125 270 85 280 90 330 C95 400 160 470 203 500', col:'rvf'},
+  'dorsal-L': {d:'M160 300 C165 360 180 430 210 492', col:'rvf'},
+  'meyer-R':  {d:'M300 300 C335 270 375 280 370 330 C365 400 300 470 257 500', col:'lvf'},
+  'dorsal-R': {d:'M300 300 C295 360 280 430 250 492', col:'lvf'}
+};
+function buildBrain(){
+  const g = $('bStatic'); g.innerHTML = '';
+  el('path', {class:'brain', d:'M230 42 C140 42 68 112 64 232 C60 362 110 528 230 548 C350 528 400 362 396 232 C392 112 320 42 230 42 Z'}, g);
+  el('path', {d:'M230 470 L230 548', stroke:'var(--brain-line)', 'stroke-width':2}, g);
+  el('ellipse', {cx:230, cy:310, rx:46, ry:40, fill:'var(--mid)', stroke:'var(--brain-line)', 'stroke-width':1.5}, g);
+  // eyes
+  [['L',164],['R',296]].forEach(([e, cx]) => {
+    el('circle', {cx, cy:88, r:31, fill:'var(--panel)', stroke:'var(--muted)', 'stroke-width':1.5}, g);
+    el('ellipse', {cx, cy:62, rx:12, ry:5, fill:'color-mix(in srgb, var(--lgn) 35%, var(--panel))', stroke:'var(--muted)'}, g);
+    // retina halves: lateral half of left eye and medial half of right eye see the right visual field
+    const leftArcCol = e === 'L' ? 'var(--rvf)' : 'var(--rvf)';
+    el('path', {d:`M${cx - 30} 92 A30 30 0 0 0 ${cx} 118`, fill:'none', stroke: leftArcCol, 'stroke-width':5, 'stroke-linecap':'round'}, g);
+    el('path', {d:`M${cx} 118 A30 30 0 0 0 ${cx + 30} 92`, fill:'none', stroke:'var(--lvf)', 'stroke-width':5, 'stroke-linecap':'round'}, g);
+    const t = el('text', {x:cx, y:24, class:'t-head', 'text-anchor':'middle'}, g); t.textContent = e === 'L' ? 'Left eye' : 'Right eye';
+    const tl = el('text', {x:cx - 24, y:132, class:'t-lab', 'text-anchor':'middle'}, g); tl.textContent = e === 'L' ? 'T' : 'N';
+    const tr = el('text', {x:cx + 24, y:132, class:'t-lab', 'text-anchor':'middle'}, g); tr.textContent = e === 'L' ? 'N' : 'T';
+  });
+  // V1
+  el('ellipse', {cx:203, cy:505, rx:24, ry:17, fill:'var(--v1)', stroke:'var(--brain-line)'}, g);
+  el('ellipse', {cx:257, cy:505, rx:24, ry:17, fill:'var(--v1)', stroke:'var(--brain-line)'}, g);
+  // radiations and fibers
+  Object.entries(RAD).forEach(([k, r]) => el('path', {class:'rad', d:r.d, stroke:`var(--${r.col})`}, g));
+  Object.entries(FIB).forEach(([k, f]) => el('path', {class:'fiber', d:f.d, stroke:`var(--${f.col})`}, g));
+  el('ellipse', {cx:160, cy:300, rx:13, ry:10, fill:'var(--lgn)'}, g);
+  el('ellipse', {cx:300, cy:300, rx:13, ry:10, fill:'var(--lgn)'}, g);
+  // labels
+  const lab = (x, y, s, a) => { const t = el('text', {x, y, class:'t-lab', 'text-anchor':a || 'start'}, g); t.textContent = s; };
+  lab(90, 150, 'Optic nerve'); lab(118, 210, 'Optic chiasm');
+  el('line', {x1:192, y1:206, x2:222, y2:204, stroke:'var(--muted)', 'stroke-width':.8}, g);
+  lab(112, 252, 'Optic tract');
+  lab(160, 328, 'LGN', 'middle'); lab(300, 328, 'LGN', 'middle');
+  lab(372, 268, 'Meyer’s'); lab(372, 282, 'loop');
+  lab(296, 420, 'Optic'); lab(296, 434, 'radiation');
+  lab(230, 572, 'Primary visual cortex (V1)', 'middle');
+  const L = el('text', {x:30, y:584, class:'t-head'}, g); L.textContent = 'Left';
+  const R = el('text', {x:430, y:584, class:'t-head', 'text-anchor':'end'}, g); R.textContent = 'Right';
+}
+function renderSites(){
+  const g = $('bSites'); g.innerHTML = '';
+  const showLesions = st.mode === 'explore' || (st.quiz && st.quiz.revealed);
+  const L = st.mode === 'explore' ? st.lesions : (st.quiz ? new Set([st.quiz.answer]) : new Set());
+  Object.entries(SITES).forEach(([id, s]) => {
+    const grp = el('g', {class:'site', tabindex:0, role:'button', 'aria-label': (st.mode === 'quiz' ? 'Guess: ' : (L.has(id) ? 'Remove lesion: ' : 'Add lesion: ')) + s.name}, g);
+    el('circle', {class:'ring', cx:s.x, cy:s.y, r:13}, grp);
+    if (showLesions && L.has(id)){
+      if (s.type === 'v1' || s.type === 'lgn') el('rect', {class:'bar', x:s.x - 17, y:s.y - 4.5, width:34, height:9, rx:2, transform:`rotate(${s.type === 'v1' ? (s.side === 'L' ? 35 : -35) : 0} ${s.x} ${s.y})`}, grp);
+      else el('rect', {class:'bar', x:s.x - 19, y:s.y - 4.5, width:38, height:9, rx:2, transform:`rotate(${s.ang} ${s.x} ${s.y})`}, grp);
+    }
+    if (s.letter){
+      const ox = s.type === 'chiasm' ? 0 : 20, oy = s.type === 'chiasm' ? -18 : -12;
+      el('circle', {cx:s.x + ox, cy:s.y + oy, r:8, fill:'var(--panel)', stroke:'var(--ink)', 'stroke-width':1.2}, grp);
+      const t = el('text', {class:'t-letter', x:s.x + ox, y:s.y + oy + 4}, grp); t.textContent = s.letter;
+    }
+    el('title', {}, grp).textContent = s.name[0].toUpperCase() + s.name.slice(1);
+    const act = () => clickSite(id);
+    grp.addEventListener('click', act);
+    grp.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+  });
+}
+function renderHL(){
+  const g = $('bHL'); g.innerHTML = '';
+  const p = st.probe; if (!p) return;
+  const L = activeLesions();
+  const r = route(p.eye, p.x, p.y, L);
+  const fib = p.eye + '-' + (r.cross ? 'N' : 'T');
+  const radKey = (p.y >= 0 ? 'meyer-' : 'dorsal-') + r.S;
+  const col = p.x >= 0 ? 'var(--rvf)' : 'var(--lvf)';
+  [FIB[fib].d, RAD[radKey].d].forEach(d => { el('path', {class:'hl-halo', d}, g); el('path', {class:'hl', d, style:`stroke:${col}`}, g); });
+  const v1 = SITES['v1-' + r.S];
+  el('circle', {cx:v1.x, cy:v1.y, r:9, fill:col, opacity: r.block ? .25 : .9}, g);
+  if (r.block){
+    const s = SITES[r.block], b = el('g', {class:'block'}, g);
+    el('circle', {cx:s.x, cy:s.y, r:10}, b);
+    el('path', {d:`M${s.x-5.5} ${s.y-5.5} L${s.x+5.5} ${s.y+5.5} M${s.x+5.5} ${s.y-5.5} L${s.x-5.5} ${s.y+5.5}`}, b);
+  }
+}
+
+/* ---------- field plots and scene ---------- */
+const XR = [-96, 96], YR = [64, -76];   // degrees shown (left..right, top..bottom)
+function canvasSize(cv){
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight;
+  const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  return {W, H, dpr, w, h};
+}
+const pxToDeg = (px, py, W, H) => [XR[0] + px / W * (XR[1] - XR[0]), YR[0] + py / H * (YR[1] - YR[0])];
+const degToPx = (x, y, W, H) => [(x - XR[0]) / (XR[1] - XR[0]) * W, (y - YR[0]) / (YR[1] - YR[0]) * H];
+
+function drawField(eye){
+  const cv = $(eye === 'L' ? 'fL' : 'fR'), c = cv.getContext('2d'), {W, H, dpr} = canvasSize(cv);
+  const img = c.createImageData(W, H), d = img.data, L = activeLesions();
+  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++){
+    const [x, y] = pxToDeg(px + .5, py + .5, W, H), i = (py * W + px) * 4;
+    if (!inField(eye, x, y)){ d[i + 3] = 0; continue; }
+    const col = seen(eye, x, y, L) ? COL.seen : COL.blind;
+    d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255;
+  }
+  c.putImageData(img, 0, 0);
+  // axes
+  const [cx, cy] = degToPx(0, 0, W, H);
+  c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 1.2 * dpr;
+  c.beginPath(); c.moveTo(degToPx(-fieldR(eye, -1, 0), 0, W, H)[0], cy); c.lineTo(degToPx(fieldR(eye, 1, 0), 0, W, H)[0], cy);
+  c.moveTo(cx, degToPx(0, fieldR(eye, 0, 1), W, H)[1]); c.lineTo(cx, degToPx(0, -fieldR(eye, 0, -1), W, H)[1]); c.stroke();
+  // outline
+  c.beginPath();
+  for (let a = 0; a <= 360; a += 3){ const t = a * Math.PI / 180, r = fieldR(eye, Math.cos(t), Math.sin(t)); const [px, py] = degToPx(r * Math.cos(t), r * Math.sin(t), W, H); a ? c.lineTo(px, py) : c.moveTo(px, py); }
+  c.strokeStyle = `rgb(${COL.muted})`; c.lineWidth = 1.2 * dpr; c.stroke();
+  if (st.probe && st.probe.eye === eye){
+    const [px, py] = degToPx(st.probe.x, st.probe.y, W, H);
+    c.beginPath(); c.arc(px, py, 7 * dpr, 0, 2 * Math.PI); c.strokeStyle = st.probe.x >= 0 ? getVar('--rvf') : getVar('--lvf'); c.lineWidth = 3 * dpr; c.stroke();
+    c.beginPath(); c.arc(px, py, 3.5 * dpr, 0, 2 * Math.PI); c.strokeStyle = '#fff'; c.lineWidth = 1.5 * dpr; c.stroke();
+  }
+}
+const getVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// a simple procedural scene, drawn in degrees
+function drawScene(c, W, H){
+  const P = (x, y) => degToPx(x, y, W, H), k = W / (XR[1] - XR[0]);
+  const sky = c.createLinearGradient(0, 0, 0, P(0, 0)[1]); sky.addColorStop(0, '#6FA8DC'); sky.addColorStop(1, '#CFE4F5');
+  c.fillStyle = sky; c.fillRect(0, 0, W, P(0, -2)[1]);
+  c.fillStyle = '#7DB36A'; c.fillRect(0, P(0, -2)[1], W, H);
+  // hills
+  c.fillStyle = '#5E9A57'; c.beginPath(); c.moveTo(0, P(0, -2)[1]);
+  for (let x = XR[0]; x <= XR[1]; x += 4){ const [px, py] = P(x, 6 + 7 * Math.sin(x / 13) + 4 * Math.sin(x / 5)); c.lineTo(px, py); }
+  c.lineTo(W, P(0, -2)[1]); c.closePath(); c.fill();
+  // road to the horizon
+  c.fillStyle = '#9C9A93'; c.beginPath(); const [hx, hy] = P(0, -2);
+  c.moveTo(hx - 2 * k, hy); c.lineTo(hx + 2 * k, hy); c.lineTo(P(26, YR[1])[0], H); c.lineTo(P(-26, YR[1])[0], H); c.fill();
+  c.strokeStyle = '#F4E7B0'; c.lineWidth = 1.2 * k; c.setLineDash([4 * k, 4 * k]); c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx, H); c.stroke(); c.setLineDash([]);
+  // sun (upper left)
+  let [x, y] = P(-52, 38); c.fillStyle = '#FFD24A'; c.beginPath(); c.arc(x, y, 9 * k, 0, 2 * Math.PI); c.fill();
+  // balloon (upper right)
+  [x, y] = P(48, 34); c.fillStyle = '#E2463A'; c.beginPath(); c.ellipse(x, y, 7 * k, 8.5 * k, 0, 0, 2 * Math.PI); c.fill();
+  c.strokeStyle = '#5B3A1E'; c.lineWidth = .6 * k; c.beginPath(); c.moveTo(x - 3 * k, y + 8 * k); c.lineTo(x - 2 * k, y + 13 * k); c.moveTo(x + 3 * k, y + 8 * k); c.lineTo(x + 2 * k, y + 13 * k); c.stroke();
+  c.fillStyle = '#8A5A2B'; c.fillRect(x - 2.5 * k, y + 13 * k, 5 * k, 3.5 * k);
+  // birds (upper center-left)
+  c.strokeStyle = '#2D3A4A'; c.lineWidth = .8 * k;
+  [[-18, 30], [-12, 34], [-24, 36]].forEach(([bx, by]) => { const [px, py] = P(bx, by); c.beginPath(); c.moveTo(px - 2.5 * k, py); c.quadraticCurveTo(px - 1 * k, py - 1.5 * k, px, py); c.quadraticCurveTo(px + 1 * k, py - 1.5 * k, px + 2.5 * k, py); c.stroke(); });
+  // tree (lower left)
+  [x, y] = P(-55, -22); c.fillStyle = '#6B4A2B'; c.fillRect(x - 2 * k, y, 4 * k, 16 * k);
+  c.fillStyle = '#2F6E35'; c.beginPath(); c.arc(x, y - 2 * k, 11 * k, 0, 2 * Math.PI); c.fill();
+  // house (lower right)
+  [x, y] = P(52, -18); c.fillStyle = '#F2E2C4'; c.fillRect(x - 11 * k, y, 22 * k, 16 * k);
+  c.fillStyle = '#B5432F'; c.beginPath(); c.moveTo(x - 14 * k, y); c.lineTo(x, y - 10 * k); c.lineTo(x + 14 * k, y); c.fill();
+  c.fillStyle = '#6B4A2B'; c.fillRect(x - 3 * k, y + 7 * k, 6 * k, 9 * k);
+  c.fillStyle = '#7FB3E0'; c.fillRect(x + 5 * k, y + 4 * k, 4 * k, 4 * k); c.fillRect(x - 9 * k, y + 4 * k, 4 * k, 4 * k);
+  // dog near the road (lower center-left)
+  [x, y] = P(-14, -40); c.fillStyle = '#8B5A2B'; c.beginPath(); c.ellipse(x, y, 5 * k, 2.6 * k, 0, 0, 2 * Math.PI); c.fill();
+  c.beginPath(); c.arc(x + 5 * k, y - 2 * k, 2.2 * k, 0, 2 * Math.PI); c.fill();
+  c.fillRect(x - 4 * k, y + 1.5 * k, 1.2 * k, 3 * k); c.fillRect(x + 3 * k, y + 1.5 * k, 1.2 * k, 3 * k);
+  // car (lower right, on the road)
+  [x, y] = P(12, -48); c.fillStyle = '#2F6FC0'; c.fillRect(x - 6 * k, y - 2 * k, 12 * k, 5 * k); c.fillRect(x - 3.5 * k, y - 5 * k, 7 * k, 3.5 * k);
+  c.fillStyle = '#222'; c.beginPath(); c.arc(x - 3.5 * k, y + 3 * k, 1.6 * k, 0, 2 * Math.PI); c.arc(x + 3.5 * k, y + 3 * k, 1.6 * k, 0, 2 * Math.PI); c.fill();
+  // fixation point
+  [x, y] = P(0, 0); c.fillStyle = '#E2231A'; c.beginPath(); c.arc(x, y, Math.max(3, 1.6 * k), 0, 2 * Math.PI); c.fill();
+}
+const sceneCache = {};
+function sceneData(W, H){
+  const key = W + 'x' + H;
+  if (sceneCache[key]) return sceneCache[key];
+  const off = document.createElement('canvas'); off.width = W; off.height = H;
+  const c = off.getContext('2d'); drawScene(c, W, H);
+  return sceneCache[key] = c.getImageData(0, 0, W, H).data;
+}
+function drawView(which){
+  const cv = $('v' + which), c = cv.getContext('2d'), {W, H} = canvasSize(cv);
+  const sc = sceneData(W, H), img = c.createImageData(W, H), d = img.data, L = activeLesions();
+  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++){
+    const [x, y] = pxToDeg(px + .5, py + .5, W, H), i = (py * W + px) * 4;
+    let inside, ok;
+    if (which === 'B'){
+      const iL = inField('L', x, y), iR = inField('R', x, y);
+      inside = iL || iR; ok = (iL && seen('L', x, y, L)) || (iR && seen('R', x, y, L));
+    } else { inside = inField(which, x, y); ok = inside && seen(which, x, y, L); }
+    if (!inside){ d[i + 3] = 0; continue; }
+    if (ok){ d[i] = sc[i]; d[i + 1] = sc[i + 1]; d[i + 2] = sc[i + 2]; }
+    else { d[i] = sc[i] * .08 + 6; d[i + 1] = sc[i + 1] * .08 + 6; d[i + 2] = sc[i + 2] * .08 + 8; }
+    d[i + 3] = 255;
+  }
+  c.putImageData(img, 0, 0);
+}
+
+/* ---------- naming the deficit ---------- */
+const Q = {UL:[-1, 1], UR:[1, 1], LL:[-1, -1], LR:[1, -1]};
+function quadBlind(eye, q, L){
+  let n = 0, b = 0;
+  for (let r = 12; r <= 50; r += 6) for (let a = 8; a <= 82; a += 8){
+    const t = a * Math.PI / 180, x = Q[q][0] * r * Math.cos(t), y = Q[q][1] * r * Math.sin(t);
+    if (!inField(eye, x, y)) continue; n++; if (!seen(eye, x, y, L)) b++;
+  }
+  return b / n;
+}
+function classify(L){
+  const blind = {};
+  ['L','R'].forEach(e => blind[e] = Object.keys(Q).filter(q => quadBlind(e, q, L) > 0.9).sort().join(','));
+  const partial = ['L','R'].some(e => Object.keys(Q).some(q => { const f = quadBlind(e, q, L); return f > 0.1 && f <= 0.9; }));
+  const spared = ['L','R'].some(e => Object.keys(Q).some(q => quadBlind(e, q, L) > 0.9 && seen(e, Q[q][0] * 3, Q[q][1] * 3, L)));
+  const all = 'LL,LR,UL,UR', sp = spared ? ' with macular sparing' : '';
+  const BL = blind.L, BR = blind.R;
+  if (!BL && !BR && !partial) return {term:'Normal visual fields', short:'normal'};
+  if (BL === all && BR === all) return {term:'Complete blindness'};
+  if (BL === all && !BR) return {term:'Blindness in the left eye (monocular)'};
+  if (BR === all && !BL) return {term:'Blindness in the right eye (monocular)'};
+  if (BL === 'LL,UL' && BR === 'LR,UR') return {term:'Bitemporal hemianopia'};
+  if (BL === 'LR,UR' && BR === 'LL,UL') return {term:'Binasal hemianopia'};
+  if (BL === BR && !partial){
+    const map = {'LL,UL':'Left homonymous hemianopia', 'LR,UR':'Right homonymous hemianopia', 'UL':'Left homonymous superior quadrantanopia (“pie in the sky”)',
+      'UR':'Right homonymous superior quadrantanopia (“pie in the sky”)', 'LL':'Left homonymous inferior quadrantanopia', 'LR':'Right homonymous inferior quadrantanopia'};
+    if (map[BL]) return {term: map[BL] + sp};
+  }
+  return {term:'Combined visual field loss'};
+}
+
+/* ---------- explanations ---------- */
+const WHY = {
+  nerve: s => `Each optic nerve carries every fiber from one eye, so a complete ${SIDE[s]} optic nerve lesion blinds the ${SIDE[s]} eye. The other eye’s field is untouched, so with both eyes open the patient loses only the far ${SIDE[s]} edge of vision, which only the ${SIDE[s]} eye sees.`,
+  chiasm: () => 'At the chiasm, fibers from the nasal half of each retina cross the midline. The nasal retina sees the temporal visual field, so cutting the crossing fibers removes the outer (temporal) half of each eye’s field: bitemporal hemianopia. A classic cause is a pituitary tumor pressing on the chiasm from below.',
+  tract: s => `After the chiasm, the ${SIDE[s]} optic tract carries the ${SIDE[s === 'R' ? 'L' : 'R']} visual field from both eyes: temporal retina from the ${SIDE[s]} eye and nasal retina from the ${SIDE[s === 'R' ? 'L' : 'R']} eye. Damage removes the same half of the field in both eyes: a homonymous hemianopia on the side opposite the lesion.`,
+  lgn: s => `The ${SIDE[s]} LGN receives the whole ${SIDE[s]} optic tract, so the loss is the same as a ${SIDE[s]} tract lesion: a homonymous hemianopia of the ${SIDE[s === 'R' ? 'L' : 'R']} visual field.`,
+  meyer: s => `Fibers carrying the upper half of the ${SIDE[s === 'R' ? 'L' : 'R']} visual field (from the lower retina) loop forward through the temporal lobe in Meyer’s loop before heading back to V1. Damage there, for example from temporal lobe surgery, removes only the upper quadrant: a “pie in the sky” defect in both eyes.`,
+  dorsal: s => `Fibers carrying the lower half of the ${SIDE[s === 'R' ? 'L' : 'R']} visual field (from the upper retina) take a direct route through the parietal lobe. Damage there removes the lower quadrant in both eyes.`,
+  v1: s => `The ${SIDE[s]} visual cortex represents the ${SIDE[s === 'R' ? 'L' : 'R']} visual field from both eyes, so damage causes a homonymous hemianopia. Central vision is often spared (macular sparing), possibly because the occipital pole also receives blood from branches of the middle cerebral artery and because the fovea has a very large cortical representation.`
+};
+
+function renderStory(){
+  const box = $('story');
+  if (st.mode === 'quiz'){ renderQuiz(); return; }
+  const L = st.lesions, cls = classify(L);
+  if (!L.size){
+    box.innerHTML = '<h3>No lesions</h3><p class="term">Normal visual fields</p><p>Each eye sees a wide field, and the central part is seen by both eyes (the binocular field). Click a site on the pathway to place a lesion, or try the slide examples a–e.</p>';
+    return;
+  }
+  const names = [...L].map(id => SITES[id].name);
+  let html = `<h3>Lesion${L.size > 1 ? 's' : ''}: ${names.join(', ')}</h3><p class="term">${cls.term}</p>`;
+  [...L].forEach(id => { const s = SITES[id]; html += `<p>${L.size > 1 ? `<b>${s.name[0].toUpperCase() + s.name.slice(1)}.</b> ` : ''}${WHY[s.type](s.side)}</p>`; });
+  html += '<p class="clin">Fields are named by what is lost, from the patient’s point of view: “homonymous” means the same side of the field in both eyes, and “hemianopia” means half the field.</p>';
+  box.innerHTML = html;
+}
+
+/* ---------- quiz ---------- */
+const QUIZ_POOL = Object.keys(SITES);
+function newQuiz(){
+  let a; do { a = QUIZ_POOL[Math.floor(Math.random() * QUIZ_POOL.length)]; } while (st.quiz && a === st.quiz.answer);
+  st.quiz = {answer:a, revealed:false, feedback:null, tries:0};
+  st.probe = null; renderAll();
+}
+function samePattern(a, b){
+  const A = new Set([a]), B = new Set([b]);
+  for (const e of ['L','R']) for (let x = -88; x <= 88; x += 4) for (let y = -68; y <= 54; y += 4){
+    if (!inField(e, x, y)) continue;
+    if (seen(e, x, y, A) !== seen(e, x, y, B)) return false;
+  }
+  return true;
+}
+function guess(id){
+  const q = st.quiz; if (!q || q.revealed) return;
+  q.tries++;
+  if (samePattern(id, q.answer)){
+    q.revealed = true;
+    if (q.tries === 1) st.score.right++;
+    st.score.tries++;
+    const alt = id !== q.answer ? ` A lesion of the ${SITES[q.answer].name} gives exactly the same loss, so either answer is right.` : '';
+    q.feedback = {ok:true, html:`<b>Correct: ${SITES[id].name}.</b>${alt} ${WHY[SITES[q.answer].type](SITES[q.answer].side)}`};
+  } else {
+    const c = classify(new Set([id]));
+    q.feedback = {ok:false, html:`<b>Not quite.</b> A lesion of the ${SITES[id].name} would cause ${c.term.toLowerCase()}. Compare that with the field loss shown and try again.`};
+  }
+  renderAll();
+}
+function renderQuiz(){
+  const q = st.quiz, box = $('story');
+  if (!q){ box.innerHTML = ''; return; }
+  const cls = classify(new Set([q.answer]));
+  let html = '<h3>Where is the lesion?</h3>';
+  html += `<p>Look at the visual fields and the patient’s view, then click the site on the pathway that would cause this loss.</p>`;
+  if (q.revealed || q.tries >= 1) html += `<p class="term">${cls.term}</p>`;
+  else html += '<p class="clin">Hint after your first guess: the name of the field defect.</p>';
+  if (q.feedback) html += `<p class="fb ${q.feedback.ok ? 'ok' : 'no'}">${q.feedback.html}</p>`;
+  html += `<div class="group" style="margin-top:8px"><button class="btn primary" id="nextQ">${q.revealed ? 'Next case' : 'Skip'}</button>`;
+  if (!q.revealed) html += '<button class="btn" id="showQ">Show answer</button>';
+  html += `<span class="clin">Score: ${st.score.right} of ${st.score.tries} right on the first try</span></div>`;
+  box.innerHTML = html;
+  $('nextQ').addEventListener('click', () => { if (!q.revealed) st.score.tries++; newQuiz(); });
+  const sb = $('showQ'); if (sb) sb.addEventListener('click', () => {
+    q.revealed = true; st.score.tries++;
+    q.feedback = {ok:true, html:`<b>Answer: ${SITES[q.answer].name}.</b> ${WHY[SITES[q.answer].type](SITES[q.answer].side)}`};
+    renderAll();
+  });
+}
+
+/* ---------- probe text ---------- */
+const STEP_NAMES = {nerve:'optic nerve', chiasm:'crosses at the optic chiasm', tract:'optic tract', lgn:'LGN', meyer:'Meyer’s loop', dorsal:'dorsal radiation', v1:'visual cortex (V1)'};
+function renderProbe(){
+  const p = st.probe, out = $('probeTxt');
+  if (!p){ out.textContent = 'Click a point in either visual field to trace its route through the pathway.'; return; }
+  const L = activeLesions(), r = route(p.eye, p.x, p.y, L);
+  const quad = `${p.y >= 0 ? 'upper' : 'lower'} ${p.x >= 0 ? 'right' : 'left'}`;
+  const retina = (p.eye === 'L') === (p.x >= 0) ? 'temporal' : 'nasal';
+  const parts = r.steps.map(sid => { const s = SITES[sid]; return s.type === 'chiasm' ? STEP_NAMES.chiasm : `${SIDE[s.side]} ${STEP_NAMES[s.type]}`; });
+  let txt = `${p.eye === 'L' ? 'Left' : 'Right'} eye, ${quad} visual field → lands on the ${p.y >= 0 ? 'lower' : 'upper'} ${retina} retina → ${parts.join(' → ')}. `;
+  if (st.mode === 'quiz' && !(st.quiz && st.quiz.revealed)) txt += r.block ? 'This point is blind.' : 'This point is seen.';
+  else txt += r.block ? (Math.hypot(p.x, p.y) < MACULA && r.block.startsWith('v1') ? 'Seen.' : `Blocked at the ${SITES[r.block].name}.`) : (L.has('v1-' + r.S) && Math.hypot(p.x, p.y) < MACULA ? 'Seen, thanks to macular sparing.' : 'Seen.');
+  out.textContent = txt;
+}
+
+/* ---------- glue ---------- */
+function activeLesions(){ return st.mode === 'explore' ? st.lesions : (st.quiz ? new Set([st.quiz.answer]) : new Set()); }
+function clickSite(id){
+  if (st.mode === 'quiz'){ guess(id); return; }
+  st.lesions.has(id) ? st.lesions.delete(id) : st.lesions.add(id);
+  renderAll();
+}
+function renderAll(){
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === st.mode ? 'true' : 'false'));
+  document.querySelectorAll('[data-preset]').forEach(b => { b.disabled = st.mode === 'quiz'; b.setAttribute('aria-pressed', st.mode === 'explore' && st.lesions.size === 1 && st.lesions.has(b.dataset.preset) ? 'true' : 'false'); });
+  $('clearBtn').disabled = st.mode === 'quiz';
+  $('brainHint').textContent = st.mode === 'quiz' ? 'Click the site you think is damaged.' : 'Click a dashed circle to add or remove a lesion. You can combine several.';
+  renderSites(); renderHL();
+  drawField('L'); drawField('R');
+  drawView('L'); drawView('R'); drawView('B');
+  renderProbe(); renderStory();
+}
+
+['fL','fR'].forEach(id => {
+  const cv = $(id), eye = id === 'fL' ? 'L' : 'R';
+  cv.addEventListener('click', e => {
+    const r = cv.getBoundingClientRect();
+    const [x, y] = pxToDeg((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, 1, 1);
+    if (!inField(eye, x, y)) return;
+    st.probe = {eye, x, y}; renderAll();
+  });
+  cv.addEventListener('keydown', e => {
+    const moves = {ArrowLeft:[-6,0], ArrowRight:[6,0], ArrowUp:[0,6], ArrowDown:[0,-6]};
+    if (!moves[e.key]) return; e.preventDefault();
+    const p = st.probe && st.probe.eye === eye ? st.probe : {eye, x:-20, y:20};
+    const nx = p.x + moves[e.key][0], ny = p.y + moves[e.key][1];
+    if (inField(eye, nx, ny)){ st.probe = {eye, x:nx, y:ny}; renderAll(); }
+  });
+});
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+  st.mode = b.dataset.mode; st.probe = null;
+  if (st.mode === 'quiz') newQuiz(); else renderAll();
+}));
+document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { st.lesions = new Set([b.dataset.preset]); renderAll(); }));
+$('clearBtn').addEventListener('click', () => { st.lesions.clear(); renderAll(); });
+let rT = null;
+window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(renderAll, 120); });
+
+buildBrain();
+st.probe = {eye:'L', x:-30, y:20};
+renderAll();
+})();
+</script>
+</body>
+</html>
