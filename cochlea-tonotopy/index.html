@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GSL8D700XD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GSL8D700XD');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The cochlea as a frequency analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#E8ECF1; --panel:#FFFFFF; --ink:#16202D; --muted:#556174; --line:#CDD5DF; --focus:#1D6BD0; --link:#1D6BD0;
+  --tube:#EFE3CF; --tube-line:#C9B394; --bm:#1F4E86; --wave:#2F6FC0; --hot:#DD5414; --high:#3A7D2C; --low:#1D5FA8; --sel:#DD5414;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF; --link:#4D9CFF;
+    --tube:#3A3229; --tube-line:#5E4F3E; --bm:#7FB0F0; --wave:#62A0FF; --hot:#FF7B3A; --high:#7CC46A; --low:#62A0FF; --sel:#FF7B3A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF; --link:#4D9CFF;
+  --tube:#3A3229; --tube-line:#5E4F3E; --bm:#7FB0F0; --wave:#62A0FF; --hot:#FF7B3A; --high:#7CC46A; --low:#62A0FF; --sel:#FF7B3A;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.5}
+.wrap{max-width:1420px;margin:0 auto;padding:22px clamp(12px,3vw,32px) 40px}
+.back{display:inline-block;margin:0 0 10px;color:var(--link);font-weight:700;text-decoration:none}
+.back:hover{text-decoration:underline}
+header h1{font-size:clamp(1.55rem,2.7vw,2.2rem);line-height:1.15;margin:0 0 6px;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:84ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;margin:18px 0 14px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lbl{font-weight:700;font-size:.95rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button,.btn{font:inherit;font-size:.93rem;border:0;background:transparent;color:var(--ink);padding:7px 11px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.btn{border:1px solid var(--line);border-radius:8px}
+.seg button[aria-pressed="true"],.btn[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+button:focus-visible,input:focus-visible,canvas:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+input[type=range]{width:200px;accent-color:var(--ink)}
+.val{font-weight:700;min-width:5.2em;font-variant-numeric:tabular-nums}
+.main{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1000px){.main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.wide{grid-column:1 / -1}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px}
+.panel h2{font-size:1.08rem;margin:0 0 4px}
+.hint{margin:0 0 8px;font-size:.88rem;color:var(--muted)}
+canvas{display:block;width:100%}
+#coch{height:330px;cursor:pointer}
+#env{height:250px}
+#hc{height:300px}
+#stiff{height:170px;margin-top:8px}
+.ctrls{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center}
+.ctrls input{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+#story h3{font-size:1.04rem;margin:0 0 6px}
+#story p{margin:0 0 8px;font-size:.95rem}
+#story .now{padding:9px 12px;border-left:4px solid var(--hot);background:color-mix(in srgb,var(--hot) 9%,transparent);border-radius:0 8px 8px 0}
+#story .muted{color:var(--muted);font-size:.9rem}
+.note{margin:18px 2px 0;font-size:.86rem;color:var(--muted);max-width:115ch}
+.warn{font-size:.82rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">All BIOL125 simulations</a>
+    <h1>The cochlea as a frequency analyzer</h1>
+    <p>Play a tone into the uncoiled cochlea and watch the traveling wave along the basilar membrane. Click anywhere on the membrane to record from the inner hair cell there. Then change the membrane’s stiffness to see why the stiff base is tuned to high frequencies and the floppy apex to low ones.</p>
+  </header>
+
+  <div class="toolbar" role="group" aria-label="Sound controls">
+    <div class="group">
+      <label class="lbl" for="freq">Frequency</label>
+      <input type="range" id="freq" min="0" max="1000" step="1">
+      <span class="val" id="freqTxt"></span>
+      <div class="seg" role="group" aria-label="Preset frequencies">
+        <button data-f="100">100 Hz</button><button data-f="300">300 Hz</button><button data-f="1000">1 kHz</button>
+        <button data-f="3000">3 kHz</button><button data-f="10000">10 kHz</button>
+      </div>
+    </div>
+    <div class="group">
+      <label class="lbl" for="level">Loudness</label>
+      <input type="range" id="level" min="20" max="90" step="5" value="60" style="width:130px">
+      <span class="val" id="levelTxt">60 dB</span>
+    </div>
+    <div class="group">
+      <button class="btn" id="playBtn" aria-pressed="false">Play sound</button>
+      <span class="warn">Turn your volume down first.</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <section class="panel wide" aria-label="Uncoiled cochlea">
+      <h2>“Uncoiled” cochlea</h2>
+      <p class="hint">The traveling wave is slowed down so you can see it. Click the basilar membrane to choose which inner hair cell to record from (points 1–7 match the slide).</p>
+      <canvas id="coch" tabindex="0" aria-label="Uncoiled cochlea with an animated basilar membrane"></canvas>
+    </section>
+
+    <section class="panel" aria-label="Traveling wave envelope">
+      <h2>Where the membrane moves most</h2>
+      <p class="hint">Peak displacement of the basilar membrane along its length for the current tone.</p>
+      <canvas id="env" aria-label="Relative amplitude versus distance from stapes"></canvas>
+      <div class="row"><button class="btn" id="refBtn" aria-pressed="true">Compare points 1–7</button></div>
+    </section>
+
+    <section class="panel" aria-label="Inner hair cell recording">
+      <h2 id="hcTitle">Inner hair cell recording</h2>
+      <p class="hint">A 40 ms tone, as in the slide recordings. Below: spikes in the auditory nerve fiber this hair cell drives, across 6 repeats.</p>
+      <canvas id="hc" aria-label="Inner hair cell membrane potential and auditory nerve spikes"></canvas>
+    </section>
+
+    <section class="panel" aria-label="Basilar membrane stiffness">
+      <h2>Basilar membrane stiffness</h2>
+      <p class="hint">Normally the membrane is narrow and stiff at the base and wide and floppy at the apex. Each place resonates best at a frequency set by its stiffness.</p>
+      <div class="ctrls">
+        <label class="lbl" for="stiffAll">Overall stiffness</label>
+        <input type="range" id="stiffAll" min="-4" max="4" step="0.5" value="0">
+        <span class="val" id="stiffAllTxt">×1</span>
+        <label class="lbl" for="grad">Base-to-apex gradient</label>
+        <input type="range" id="grad" min="0" max="150" step="5" value="100">
+        <span class="val" id="gradTxt">100%</span>
+      </div>
+      <div class="row">
+        <button class="btn" id="normBtn">Normal human cochlea</button>
+        <button class="btn" id="uniBtn">No gradient (uniform)</button>
+        <button class="btn" id="stifferBtn">Stiffer, like a bat or mouse</button>
+      </div>
+      <canvas id="stiff" aria-label="Stiffness and tuned frequency along the membrane"></canvas>
+    </section>
+
+    <section class="panel" aria-label="Explanation">
+      <div id="story" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <p class="note">Simplified, illustrative model of a 35 mm human cochlea. The place–frequency map follows the Greenwood function; stiffness changes shift it on the assumption that each place resonates at a frequency proportional to the square root of its stiffness. The active amplification by outer hair cells is not modeled separately. Hair cell AC responses are filtered by the membrane’s time constant, so above about 1 kHz the DC component dominates. Auditory nerve fibers can phase-lock up to a few kHz.</p>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const LEN = 35, SITES = [2.5, 7.5, 12.5, 17.5, 22.5, 27.5, 32.5];
+
+/* ---------- colors ---------- */
+let COL = {};
+function hex(h){ h = h.trim().replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i, i+2), 16)); }
+function readColors(){ const cs = getComputedStyle(document.documentElement);
+  ['ink','muted','line','panel','tube','tube-line','bm','wave','hot','high','low','sel'].forEach(k => COL[k] = hex(cs.getPropertyValue('--' + k))); }
+const rgb = (a, al) => al == null ? `rgb(${a})` : `rgba(${a[0]},${a[1]},${a[2]},${al})`;
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); dirty = true; });
+const FONT = (w, s) => `${w} ${s}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+
+/* ---------- state ---------- */
+const st = {f:800, db:60, play:false, site:22.5, stiffLog:0, grad:1, refs:true};
+let dirty = true;
+
+/* ---------- model ---------- */
+const greenwood = d => 165.4 * (Math.pow(10, 2.1 * (1 - d / LEN)) - 0.88);
+const LOGMID = Math.log10(greenwood(LEN / 2));
+// characteristic frequency at distance d from the stapes, for the current stiffness settings
+function CF(d){
+  const lg = LOGMID + st.grad * (Math.log10(greenwood(d)) - LOGMID) + 0.5 * st.stiffLog * Math.log10(2);
+  return Math.pow(10, lg);
+}
+// stiffness relative to the normal mid-cochlea, in log10 units (resonance ∝ √stiffness)
+const logStiff = d => 2 * (Math.log10(CF(d)) - LOGMID);
+const logStiffNormal = d => 2 * (Math.log10(greenwood(d)) - LOGMID);
+function envelope(d, f){
+  const u = Math.log2(f / CF(d));          // octaves above this place's tuned frequency
+  return u <= 0 ? Math.exp(-u * u / (2 * 1.3 * 1.3)) : Math.exp(-u * u / (2 * 0.22 * 0.22));
+}
+function phaseCycles(d, f){                // cycles of lag accumulated by the traveling wave
+  const u = Math.log2(f / CF(d));
+  return 2.4 / (1 + Math.exp(-(u + 0.35) / 0.28));
+}
+const levelGain = () => Math.pow(10, (st.db - 60) / 20);
+function drive(d, f){ return Math.tanh(1.6 * envelope(d, f) * levelGain()); }   // 0..1 transducer drive
+function hairCell(d, f){
+  const D = drive(d, f);
+  const ac = 13 * D / Math.sqrt(1 + Math.pow(f / 800, 2));
+  const dc = 9 * D * D;
+  return {D, ac, dc};
+}
+function fiberRate(d, f){ const D = drive(d, f), D2 = D * D; return 5 + 195 * D2 / (D2 + 0.12); }
+const phaseLock = f => 1 / (1 + Math.pow(f / 2500, 4));
+// place along the membrane with the highest displacement
+function peakPlace(f){
+  let best = 0, bd = 0;
+  for (let d = 0; d <= LEN; d += 0.1){ const e = envelope(d, f); if (e > best){ best = e; bd = d; } }
+  return {d:bd, amp:best};
+}
+function placeFor(fr){            // where CF(d) == fr, or null if outside the membrane
+  if (fr > CF(0) || fr < CF(LEN)) return null;
+  let a = 0, b = LEN;
+  for (let i = 0; i < 40; i++){ const m = (a + b) / 2; if (CF(m) > fr) a = m; else b = m; }
+  return (a + b) / 2;
+}
+const fmtF = f => f >= 1000 ? (f >= 10000 ? Math.round(f / 1000) : (Math.round(f / 100) / 10)) + ' kHz' : Math.round(f) + ' Hz';
+
+/* ---------- canvas helpers ---------- */
+function fit(cv){
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)){ cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  return {c, w, h};
+}
+function heat(t){       // 0..1 -> color from panel-ish to hot
+  t = clamp(t, 0, 1);
+  const a = COL.line, b = [242, 190, 34], c2 = COL.hot;
+  const m = (p, q, s) => p.map((v, i) => Math.round(v + (q[i] - v) * s));
+  return rgb(t < .5 ? m(a, b, t * 2) : m(b, c2, (t - .5) * 2));
+}
+
+/* ---------- cochlea ---------- */
+const coch = $('coch');
+let cochGeom = null;
+function drawCochlea(time){
+  const {c, w, h} = fit(coch);
+  const x0 = Math.max(70, w * 0.09), x1 = w - Math.max(40, w * 0.05), ym = 120, th = 52;
+  const X = d => x0 + d / LEN * (x1 - x0);
+  cochGeom = {x0, x1, ym, X};
+  // tube
+  c.fillStyle = rgb(COL.tube); c.strokeStyle = rgb(COL['tube-line']); c.lineWidth = 2;
+  c.beginPath(); c.moveTo(x0 - 6, ym - th); c.lineTo(x1, ym - th); c.arc(x1, ym, th, -Math.PI / 2, Math.PI / 2); c.lineTo(x0 - 6, ym + th); c.closePath(); c.fill(); c.stroke();
+  // labels
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 12);
+  c.textAlign = 'left';
+  c.fillText('Scala vestibuli', X(9), ym - th + 18); c.fillText('Scala tympani', X(9), ym + th - 9);
+  c.textAlign = 'right'; c.fillText('Helicotrema', x1 + th - 6, ym - th - 8);
+  c.textAlign = 'center'; c.fillText('Cochlear base', X(0) + 20, ym - th - 26); c.fillText('Cochlear apex', x1 + 10, ym + th + 18);
+  // pressure wave arrows
+  c.strokeStyle = rgb(COL.hot); c.fillStyle = rgb(COL.hot); c.lineWidth = 2.5;
+  const arrow = (xa, xb, y) => { c.beginPath(); c.moveTo(xa, y); c.lineTo(xb, y); c.stroke(); const s = Math.sign(xb - xa);
+    c.beginPath(); c.moveTo(xb, y); c.lineTo(xb - 9 * s, y - 5); c.lineTo(xb - 9 * s, y + 5); c.closePath(); c.fill(); };
+  arrow(X(14), X(20), ym - th - 12); arrow(X(20), X(14), ym + th + 14);
+  c.font = FONT(400, 12); c.textAlign = 'left'; c.fillText('Direction of pressure waves', X(20.6), ym - th - 8);
+  // basilar membrane: thickness shows stiffness
+  const mn = Math.min(logStiff(0), logStiff(LEN)), mx = Math.max(logStiff(0), logStiff(LEN));
+  for (let d = 0; d < LEN; d += 0.5){
+    const t = mx - mn > 0.01 ? (logStiff(d) - mn) / (mx - mn) : 0.5;
+    c.fillStyle = rgb(COL.bm, 0.18 + 0.32 * t);
+    c.fillRect(X(d), ym - 2 - 3 * t, X(d + 0.5) - X(d) + 0.5, 4 + 6 * t);
+  }
+  // traveling wave (slowed down)
+  const amp = 8 + 34 * clamp((st.db - 20) / 70, 0, 1);
+  const ph = time * 2 * Math.PI * 0.9;
+  c.strokeStyle = rgb(COL.wave); c.lineWidth = 3; c.lineJoin = 'round'; c.beginPath();
+  for (let i = 0; i <= 350; i++){
+    const d = i / 350 * LEN, y = ym - amp * envelope(d, st.f) * Math.sin(ph - 2 * Math.PI * phaseCycles(d, st.f));
+    i ? c.lineTo(X(d), y) : c.moveTo(X(d), y);
+  }
+  c.stroke();
+  // envelope ghost
+  c.strokeStyle = rgb(COL.wave, .35); c.lineWidth = 1.2; c.setLineDash([4, 4]);
+  [1, -1].forEach(sgn => { c.beginPath(); for (let i = 0; i <= 200; i++){ const d = i / 200 * LEN, y = ym - sgn * amp * envelope(d, st.f); i ? c.lineTo(X(d), y) : c.moveTo(X(d), y); } c.stroke(); });
+  c.setLineDash([]);
+  // stapes, oval and round windows
+  const sOff = 4 * Math.sin(ph) * clamp((st.db - 20) / 70, .2, 1);
+  c.fillStyle = rgb(COL.panel); c.strokeStyle = rgb(COL.ink); c.lineWidth = 1.5;
+  c.beginPath(); c.ellipse(x0 - 10, ym - 24, 5, 14, 0, 0, 2 * Math.PI); c.fill(); c.stroke();
+  c.fillStyle = rgb(COL.muted);
+  c.beginPath(); c.moveTo(x0 - 16 + sOff, ym - 34); c.lineTo(x0 - 40 + sOff, ym - 44); c.lineTo(x0 - 44 + sOff, ym - 36); c.lineTo(x0 - 16 + sOff, ym - 16); c.closePath(); c.fill();
+  c.fillStyle = rgb(COL.panel); c.beginPath(); c.ellipse(x0 - 10, ym + 26, 5, 11, 0, 0, 2 * Math.PI); c.fill(); c.stroke();
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 11.5); c.textAlign = 'right';
+  c.fillText('Stapes on', x0 - 18, ym - 58); c.fillText('oval window', x0 - 18, ym - 46 + 0);
+  c.fillText('Round', x0 - 18, ym + 50); c.fillText('window', x0 - 18, ym + 62);
+  // points 1-7
+  SITES.forEach((d, i) => {
+    c.beginPath(); c.arc(X(d), ym - 26, 9, 0, 2 * Math.PI); c.fillStyle = rgb(COL.ink); c.fill();
+    c.fillStyle = rgb(COL.panel); c.font = FONT(700, 11); c.textAlign = 'center'; c.fillText(i + 1, X(d), ym - 22);
+  });
+  // selected hair cell
+  const sx = X(st.site);
+  c.strokeStyle = rgb(COL.sel); c.lineWidth = 2; c.setLineDash([3, 3]);
+  c.beginPath(); c.moveTo(sx, ym - th + 4); c.lineTo(sx, ym + th + 34); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(sx, ym, 6, 0, 2 * Math.PI); c.fillStyle = rgb(COL.sel); c.fill();
+  // activity strip
+  const sy = ym + th + 40, sh = 22;
+  c.fillStyle = rgb(COL.ink); c.font = FONT(700, 12.5); c.textAlign = 'left';
+  c.fillText('Auditory nerve activity along the cochlea', x0, sy - 6);
+  for (let d = 0; d < LEN; d += 0.25){ c.fillStyle = heat((fiberRate(d, st.f) - 5) / 195); c.fillRect(X(d), sy, X(d + 0.25) - X(d) + 0.6, sh); }
+  c.strokeStyle = rgb(COL.line); c.strokeRect(x0, sy, x1 - x0, sh);
+  // frequency map axis
+  const ay = sy + sh + 8;
+  c.fillStyle = rgb(COL.ink); c.font = FONT(700, 12.5); c.fillText('Tuned frequency', x0, ay + 36);
+  c.font = FONT(400, 11.5); c.textAlign = 'center'; c.strokeStyle = rgb(COL.muted); c.lineWidth = 1;
+  [40000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50, 20].forEach(fr => {
+    const d = placeFor(fr); if (d == null) return;
+    c.beginPath(); c.moveTo(X(d), ay); c.lineTo(X(d), ay + 6); c.stroke();
+    c.fillStyle = rgb(COL.muted); c.fillText(fmtF(fr), X(d), ay + 19);
+  });
+  if (Math.abs(st.grad) < 0.02){ c.fillStyle = rgb(COL.muted); c.textAlign = 'center'; c.fillText(`Every place is tuned to about ${fmtF(CF(0))}`, (x0 + x1) / 2, ay + 19); }
+  // distance axis
+  c.fillStyle = rgb(COL.muted); c.textAlign = 'center';
+  [0, 10, 20, 30].forEach(mm => c.fillText(mm + ' mm', X(mm), h - 6));
+}
+coch.addEventListener('click', e => {
+  if (!cochGeom) return;
+  const r = coch.getBoundingClientRect(), x = e.clientX - r.left;
+  let d = clamp((x - cochGeom.x0) / (cochGeom.x1 - cochGeom.x0) * LEN, 0.3, LEN - 0.3);
+  const near = SITES.find(s => Math.abs(s - d) < 1.2); if (near != null) d = near;
+  st.site = d; dirty = true;
+});
+coch.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault();
+  st.site = clamp(st.site + (e.key === 'ArrowRight' ? 1 : -1), 0.3, LEN - 0.3); dirty = true;
+});
+
+/* ---------- envelope plot ---------- */
+function drawEnv(){
+  const {c, w, h} = fit($('env'));
+  const x0 = 46, x1 = w - 10, y0 = 14, y1 = h - 34;
+  const X = d => x0 + d / LEN * (x1 - x0), Y = a => y1 - a * (y1 - y0);
+  c.strokeStyle = rgb(COL.line); c.lineWidth = 1; c.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 11.5); c.textAlign = 'center';
+  [0, 10, 20, 30].forEach(mm => { c.fillText(mm, X(mm), y1 + 15); });
+  c.fillText('Distance from stapes (mm)', (x0 + x1) / 2, h - 4);
+  c.save(); c.translate(14, (y0 + y1) / 2); c.rotate(-Math.PI / 2); c.fillText('Relative amplitude', 0, 0); c.restore();
+  if (st.refs){
+    SITES.forEach((sd, i) => {
+      const fr = CF(sd);
+      c.strokeStyle = rgb(COL.muted, .45); c.lineWidth = 1.2; c.beginPath();
+      for (let k = 0; k <= 200; k++){ const d = k / 200 * LEN, y = Y(envelope(d, fr) * .92); k ? c.lineTo(X(d), y) : c.moveTo(X(d), y); }
+      c.stroke();
+      c.fillStyle = rgb(COL.muted); c.font = FONT(400, 10.5);
+      c.fillText(fmtF(fr), X(sd), Y(.92) - 4);
+    });
+  }
+  // selected site
+  c.strokeStyle = rgb(COL.sel); c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(st.site), y0); c.lineTo(X(st.site), y1); c.stroke(); c.setLineDash([]);
+  // current
+  c.strokeStyle = rgb(COL.wave); c.lineWidth = 3; c.beginPath();
+  for (let k = 0; k <= 300; k++){ const d = k / 300 * LEN, y = Y(envelope(d, st.f)); k ? c.lineTo(X(d), y) : c.moveTo(X(d), y); }
+  c.stroke();
+  c.fillStyle = rgb(COL.wave); c.font = FONT(700, 12.5); c.textAlign = 'center';
+  c.fillText(`Now: ${fmtF(st.f)}`, (x0 + x1) / 2, y1 - 6);
+  c.fillStyle = rgb(COL.high); c.textAlign = 'left'; c.fillText('Base: high frequencies', x0 + 6, y1 - 6);
+  c.fillStyle = rgb(COL.low); c.textAlign = 'right'; c.fillText('Apex: low frequencies', x1 - 6, y1 - 6);
+}
+
+/* ---------- hair cell recording ---------- */
+function rng(seed){ let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function drawHC(){
+  const {c, w, h} = fit($('hc'));
+  const x0 = 78, x1 = w - 10, T = 70, on0 = 10, on1 = 50;
+  const X = t => x0 + t / T * (x1 - x0);
+  const ramp = t => clamp(Math.min((t - on0) / 2, (on1 - t) / 2), 0, 1);
+  const f = st.f, hcR = hairCell(st.site, f);
+  const rows = {snd:[8, 46], vm:[62, 172], sp:[188, h - 26]};
+  // labels
+  c.fillStyle = rgb(COL.ink); c.font = FONT(700, 12); c.textAlign = 'left';
+  c.fillText('Sound', 0, rows.snd[0] + 22); c.fillText('Hair cell', 0, rows.vm[0] + 40); c.fillText('mV', 0, rows.vm[0] + 56);
+  c.fillText('Nerve', 0, rows.sp[0] + 30); c.fillText('spikes', 0, rows.sp[0] + 46);
+  c.fillStyle = rgb([242, 190, 34], .18); c.fillRect(X(on0), rows.snd[0], X(on1) - X(on0), rows.sp[1] - rows.snd[0]);
+  // generic drawing of a sinusoid that may be too fast to resolve
+  function wave(y0, y1, base, ac, dc, fr, yOf){
+    c.beginPath();
+    const top = [], bot = [];
+    for (let px = x0; px <= x1; px++){
+      const ta = (px - x0) / (x1 - x0) * T, tb = (px + 1 - x0) / (x1 - x0) * T;
+      const n = Math.max(4, Math.ceil((tb - ta) * fr / 1000 * 8));
+      let mn = Infinity, mx = -Infinity;
+      if ((tb - ta) * fr / 1000 >= 1){
+        const r = ramp((ta + tb) / 2); mn = base + dc * r - ac * r; mx = base + dc * r + ac * r;
+      } else for (let k = 0; k <= n; k++){
+        const t = ta + (tb - ta) * k / n, r = ramp(t), v = base + dc * r + ac * r * Math.sin(2 * Math.PI * fr * t / 1000);
+        mn = Math.min(mn, v); mx = Math.max(mx, v);
+      }
+      top.push([px, yOf(mx)]); bot.push([px, yOf(mn)]);
+    }
+    c.moveTo(top[0][0], top[0][1]); top.forEach(p => c.lineTo(p[0], p[1]));
+    for (let i = bot.length - 1; i >= 0; i--) c.lineTo(bot[i][0], bot[i][1]);
+    c.closePath(); c.fill(); c.stroke();
+  }
+  // sound
+  c.strokeStyle = rgb(COL.muted); c.fillStyle = rgb(COL.muted); c.lineWidth = 1;
+  const sm = (rows.snd[0] + rows.snd[1]) / 2, sa = 4 + 12 * clamp((st.db - 20) / 70, 0, 1);
+  wave(rows.snd[0], rows.snd[1], 0, sa, 0, f, v => sm - v);
+  // membrane potential (-45 mV rest)
+  const vmin = -50, vmax = -18, Yv = v => rows.vm[1] - (v - vmin) / (vmax - vmin) * (rows.vm[1] - rows.vm[0]);
+  c.strokeStyle = rgb(COL.line); c.beginPath(); c.moveTo(x0, Yv(-45) + .5); c.lineTo(x1, Yv(-45) + .5); c.stroke();
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 10.5); c.textAlign = 'right';
+  [-45, -35, -25].forEach(v => c.fillText(v, x0 - 4, Yv(v) + 3));
+  c.strokeStyle = rgb(COL.ink); c.fillStyle = rgb(COL.ink); c.lineWidth = 1.2;
+  wave(rows.vm[0], rows.vm[1], -45, hcR.ac, hcR.dc, f, Yv);
+  // annotate AC / DC
+  c.font = FONT(400, 11); c.textAlign = 'left'; c.fillStyle = rgb(COL.muted);
+  c.fillText(`AC ±${hcR.ac.toFixed(1)} mV   DC +${hcR.dc.toFixed(1)} mV`, X(on1) + 6, rows.vm[0] + 12);
+  // spikes: 6 repeats
+  const rate = fiberRate(st.site, f), pl = phaseLock(f), nRep = 6, rh = (rows.sp[1] - rows.sp[0]) / nRep;
+  const R = rng(Math.round(f * 7 + st.site * 131 + st.db * 17 + st.stiffLog * 1000 + st.grad * 313));
+  c.strokeStyle = rgb(COL.ink); c.lineWidth = 1.3;
+  for (let k = 0; k < nRep; k++){
+    const yA = rows.sp[0] + k * rh + 2, yB = yA + rh - 4;
+    c.beginPath(); let last = -10;
+    for (let t = 0; t < T; t += 0.02){
+      const r = ramp(t), ph = Math.cos(2 * Math.PI * f * t / 1000);
+      const rr = 5 + (rate - 5) * r * (1 - pl + pl * Math.max(0, ph) * 3.0);
+      if (t - last > 0.8 && R() < rr * 0.02 / 1000){ last = t; const xx = Math.round(X(t)) + .5; c.moveTo(xx, yA); c.lineTo(xx, yB); }
+    }
+    c.stroke();
+  }
+  // time axis
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 11); c.textAlign = 'center';
+  [0, 10, 20, 30, 40, 50, 60, 70].forEach(t => c.fillText(t, X(t), h - 12));
+  c.fillText('Time (ms)', (x0 + x1) / 2, h - 0);
+  $('hcTitle').textContent = `Inner hair cell ${SITES.indexOf(st.site) >= 0 ? 'at point ' + (SITES.indexOf(st.site) + 1) : st.site.toFixed(1) + ' mm from the stapes'} (tuned to ${fmtF(CF(st.site))})`;
+}
+
+/* ---------- stiffness plot ---------- */
+function drawStiff(){
+  const {c, w, h} = fit($('stiff'));
+  const x0 = 46, x1 = w - 10, y0 = 18, y1 = h - 30;
+  const X = d => x0 + d / LEN * (x1 - x0);
+  const lo = -5, hi = 5, Y = v => y1 - (clamp(v, lo, hi) - lo) / (hi - lo) * (y1 - y0);
+  c.strokeStyle = rgb(COL.line); c.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 11); c.textAlign = 'center';
+  [0, 10, 20, 30].forEach(mm => c.fillText(mm, X(mm), y1 + 14));
+  c.fillText('Distance from stapes (mm)', (x0 + x1) / 2, h - 2);
+  c.save(); c.translate(12, (y0 + y1) / 2); c.rotate(-Math.PI / 2); c.fillText('Stiffness (log)', 0, 0); c.restore();
+  c.strokeStyle = rgb(COL.muted); c.setLineDash([5, 4]); c.lineWidth = 1.4; c.beginPath();
+  for (let k = 0; k <= 100; k++){ const d = k / 100 * LEN; const y = Y(logStiffNormal(d)); k ? c.lineTo(X(d), y) : c.moveTo(X(d), y); }
+  c.stroke(); c.setLineDash([]);
+  c.strokeStyle = rgb(COL.bm); c.lineWidth = 3; c.beginPath();
+  for (let k = 0; k <= 100; k++){ const d = k / 100 * LEN; const y = Y(logStiff(d)); k ? c.lineTo(X(d), y) : c.moveTo(X(d), y); }
+  c.stroke();
+  c.textAlign = 'left'; c.font = FONT(700, 11.5); c.fillStyle = rgb(COL.bm); c.fillText('Current', x0 + 6, y0 + 13);
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 11.5); c.fillText('Dashed: normal human', x0 + 64, y0 + 13);
+  c.textAlign = 'right'; c.fillStyle = rgb(COL.ink); c.font = FONT(700, 11.5);
+  c.fillText(`Tuned range: ${fmtF(CF(LEN))} (apex) to ${fmtF(CF(0))} (base)`, x1 - 6, y1 - 6);
+}
+
+/* ---------- story ---------- */
+function renderStory(){
+  const f = st.f, pk = peakPlace(f), cfSite = CF(st.site), hcR = hairCell(st.site, f);
+  const pt = SITES.reduce((b, s, i) => Math.abs(s - pk.d) < Math.abs(SITES[b] - pk.d) ? i : b, 0) + 1;
+  const normal = st.stiffLog === 0 && Math.abs(st.grad - 1) < 0.01;
+  let h = `<h3>${fmtF(f)} at ${st.db} dB</h3>`;
+  const inRange = f <= CF(0) * 1.05 && f >= CF(LEN) * 0.95;
+  if (Math.abs(st.grad) < 0.02){
+    h += `<p class="now">With no stiffness gradient, every place along the membrane is tuned to the same frequency (about ${fmtF(CF(0))}). A tone moves the whole membrane together, more or less strongly depending on how close it is to that one frequency, so <b>the place of vibration no longer tells the brain which frequency it heard</b>.</p>`;
+  } else if (!inRange && f > CF(0)){
+    h += `<p class="now">This tone is higher than even the stiffest part of the membrane is tuned to (${fmtF(CF(0))} at the base). The wave dies out right at the base, so hair cells barely respond: this cochlea can’t hear it well. A stiffer membrane would bring it into range.</p>`;
+  } else if (!inRange){
+    h += `<p class="now">This tone is lower than the floppiest part of the membrane is tuned to (${fmtF(CF(LEN))} at the apex). The wave runs all the way to the apex without reaching a sharp peak.</p>`;
+  } else {
+    h += `<p class="now">The wave starts at the stapes, grows as it travels, peaks about <b>${pk.d.toFixed(0)} mm from the stapes</b> (near point ${pt}), where the membrane is tuned to ${fmtF(f)}, then dies out quickly. ${f >= 2000 ? 'High frequencies peak toward the stiff base.' : f <= 400 ? 'Low frequencies travel farther, toward the floppy apex.' : ''}</p>`;
+  }
+  // hair cell
+  const ratio = Math.log2(f / cfSite);
+  const where = Math.abs(st.grad) < 0.02
+    ? (Math.abs(ratio) < 0.5 ? 'close to the one frequency the whole membrane is tuned to, so this hair cell responds strongly, and so does every other hair cell' : 'far from the one frequency the whole membrane is tuned to, so this hair cell responds weakly, and so does every other hair cell')
+    : Math.abs(ratio) < 0.35 ? 'right at this hair cell’s tuned frequency, so it responds strongly' :
+    ratio > 0 ? 'above this hair cell’s tuned frequency: the wave peaks before reaching it and dies out, so the response is weak' :
+    'below this hair cell’s tuned frequency: the wave passes this point on its way to peak farther along, so the response is modest';
+  h += `<p><b>Recorded hair cell</b> (tuned to ${fmtF(cfSite)}): the tone is ${where}.</p>`;
+  if (hcR.D > 0.08){
+    h += f <= 1000
+      ? `<p>At this low frequency the hair cell’s voltage <b>phase-locks</b>: it depolarizes on each cycle as the stereocilia are pushed toward the tallest cilia, opening the tip-link channels so K⁺ flows in. Auditory nerve spikes line up with a particular phase of the sound.</p>`
+      : `<p>At this high frequency the membrane can’t follow each cycle, so the response is mostly a steady <b>DC depolarization</b>. ${phaseLock(f) > 0.3 ? 'Nerve spikes still tend to align with the sound cycles.' : 'Nerve spikes no longer line up with the cycles.'} The brain identifies the frequency mainly by <b>which</b> hair cells are active along the cochlea.</p>`;
+  }
+  // stiffness
+  if (!normal){
+    if (st.stiffLog > 0) h += `<p class="muted">A stiffer membrane is tuned higher everywhere (now ${fmtF(CF(LEN))}–${fmtF(CF(0))}), so the same tone peaks closer to the apex and the upper limit of hearing rises. This is one reason animals like bats and mice hear ultrasound: their basilar membranes are stiffer and shorter.</p>`;
+    else if (st.stiffLog < 0) h += `<p class="muted">A floppier membrane is tuned lower everywhere (now ${fmtF(CF(LEN))}–${fmtF(CF(0))}), so the same tone peaks closer to the base and high frequencies fall out of range.</p>`;
+    if (st.grad > 0.02 && Math.abs(st.grad - 1) > 0.01) h += `<p class="muted">${st.grad < 1 ? 'A shallower stiffness gradient squeezes the frequency map into a narrower range: each millimeter covers fewer octaves, so wave peaks are broader and frequency resolution is poorer.' : 'A steeper gradient spreads more octaves along the same length, widening the hearing range.'}</p>`;
+  } else {
+    h += `<p class="muted">Try changing the stiffness: the base of a normal cochlea is about 100 times stiffer than the apex, which is what spreads frequencies along its length.</p>`;
+  }
+  $('story').innerHTML = h;
+}
+
+/* ---------- sound ---------- */
+let actx = null, osc = null, gain = null;
+function soundGain(){ return Math.min(0.2, 0.03 * Math.pow(10, (st.db - 60) / 20)); }
+function startSound(){
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    osc = actx.createOscillator(); gain = actx.createGain();
+    osc.type = 'sine'; osc.frequency.value = Math.min(st.f, actx.sampleRate / 2 - 100);
+    gain.gain.value = 0; osc.connect(gain); gain.connect(actx.destination); osc.start();
+    gain.gain.setTargetAtTime(soundGain(), actx.currentTime, 0.03);
+  } catch (e) { st.play = false; }
+}
+function stopSound(){ if (osc){ gain.gain.setTargetAtTime(0, actx.currentTime, 0.03); const o = osc; setTimeout(() => o.stop(), 200); osc = null; } }
+function updateSound(){ if (osc){ osc.frequency.setTargetAtTime(Math.min(st.f, actx.sampleRate / 2 - 100), actx.currentTime, 0.02); gain.gain.setTargetAtTime(soundGain(), actx.currentTime, 0.03); } }
+
+/* ---------- controls ---------- */
+const FMIN = 20, FMAX = 40000;
+const sliderToF = v => FMIN * Math.pow(FMAX / FMIN, v / 1000);
+const fToSlider = f => Math.round(Math.log(f / FMIN) / Math.log(FMAX / FMIN) * 1000);
+function sync(){
+  $('freq').value = fToSlider(st.f); $('freqTxt').textContent = fmtF(st.f);
+  $('levelTxt').textContent = st.db + ' dB';
+  document.querySelectorAll('[data-f]').forEach(b => b.setAttribute('aria-pressed', Math.abs(+b.dataset.f - st.f) < 1 ? 'true' : 'false'));
+  $('playBtn').setAttribute('aria-pressed', st.play ? 'true' : 'false'); $('playBtn').textContent = st.play ? 'Stop sound' : 'Play sound';
+  $('stiffAll').value = st.stiffLog; $('stiffAllTxt').textContent = st.stiffLog >= 0 ? '×' + Math.pow(2, st.stiffLog) : '×1/' + Math.pow(2, -st.stiffLog);
+  $('grad').value = Math.round(st.grad * 100); $('gradTxt').textContent = Math.round(st.grad * 100) + '%';
+  $('refBtn').setAttribute('aria-pressed', st.refs ? 'true' : 'false');
+  dirty = true; updateSound();
+}
+$('freq').addEventListener('input', e => { const f = sliderToF(+e.target.value); st.f = f < 1000 ? Math.round(f) : Math.round(f / 10) * 10; sync(); });
+document.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => { st.f = +b.dataset.f; sync(); }));
+$('level').addEventListener('input', e => { st.db = +e.target.value; sync(); });
+$('playBtn').addEventListener('click', () => { st.play = !st.play; st.play ? startSound() : stopSound(); sync(); });
+$('stiffAll').addEventListener('input', e => { st.stiffLog = +e.target.value; sync(); });
+$('grad').addEventListener('input', e => { st.grad = +e.target.value / 100; sync(); });
+$('normBtn').addEventListener('click', () => { st.stiffLog = 0; st.grad = 1; sync(); });
+$('uniBtn').addEventListener('click', () => { st.stiffLog = 0; st.grad = 0; sync(); });
+$('stifferBtn').addEventListener('click', () => { st.stiffLog = 3; st.grad = 1; sync(); });
+$('refBtn').addEventListener('click', () => { st.refs = !st.refs; sync(); });
+window.addEventListener('resize', () => dirty = true);
+
+/* ---------- loop ---------- */
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let t0 = performance.now();
+function frame(now){
+  drawCochlea(reduce ? 0.2 : (now - t0) / 1000);
+  if (dirty){ dirty = false; drawEnv(); drawHC(); drawStiff(); renderStory(); }
+  requestAnimationFrame(frame);
+}
+sync();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
