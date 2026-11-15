@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GSL8D700XD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GSL8D700XD');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Population coding of movement direction in motor cortex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#E8ECF1; --panel:#FFFFFF; --ink:#16202D; --muted:#556174; --line:#CDD5DF; --focus:#1D6BD0; --link:#1D6BD0;
+  --pv:#D6264B; --hand:#5B6573; --up:#F2C230; --down:#7E9BD6; --target:#F2C230; --work:#F3F5F8;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF; --link:#4D9CFF;
+    --pv:#FF5577; --hand:#AEB8C6; --up:#E3B428; --down:#6E8CCB; --target:#FFD34D; --work:#1A2533;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF; --link:#4D9CFF;
+  --pv:#FF5577; --hand:#AEB8C6; --up:#E3B428; --down:#6E8CCB; --target:#FFD34D; --work:#1A2533;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.5}
+.wrap{max-width:1420px;margin:0 auto;padding:22px clamp(12px,3vw,32px) 40px}
+.back{display:inline-block;margin:0 0 10px;color:var(--link);font-weight:700;text-decoration:none}
+.back:hover{text-decoration:underline}
+header h1{font-size:clamp(1.55rem,2.7vw,2.2rem);line-height:1.15;margin:0 0 6px;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:86ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;margin:18px 0 14px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lbl{font-weight:700;font-size:.95rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button,.btn{font:inherit;font-size:.93rem;border:0;background:transparent;color:var(--ink);padding:7px 11px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.btn{border:1px solid var(--line);border-radius:8px}
+.seg button[aria-pressed="true"],.btn[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.btn.primary{background:var(--ink);color:var(--panel);font-weight:700}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,canvas:focus-visible,select:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+select{font:inherit;font-size:.93rem;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.main{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1000px){.main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px}
+.panel h2{font-size:1.08rem;margin:0 0 4px}
+.hint{margin:0 0 8px;font-size:.88rem;color:var(--muted)}
+canvas{display:block;width:100%}
+#task{aspect-ratio:1/1;max-height:520px;cursor:pointer}
+#pop{aspect-ratio:1/1;max-height:520px}
+#raster{aspect-ratio:6/5}
+#tuning{height:230px;margin-top:8px}
+#acc{height:220px}
+.readout{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline;margin:6px 0 0;font-size:.95rem}
+.readout b{font-variant-numeric:tabular-nums}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block;border:1px solid var(--line)}
+.ln{width:18px;height:4px;border-radius:2px;display:inline-block}
+#story h3{font-size:1.04rem;margin:0 0 6px}
+#story p{margin:0 0 8px;font-size:.95rem}
+#story .now{padding:9px 12px;border-left:4px solid var(--pv);background:color-mix(in srgb,var(--pv) 8%,transparent);border-radius:0 8px 8px 0}
+.note{margin:18px 2px 0;font-size:.86rem;color:var(--muted);max-width:115ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">All BIOL125 simulations</a>
+    <h1>Population coding of movement direction</h1>
+    <p>A monkey moves a joystick toward a light while we record from upper motor neurons in primary motor cortex. Each neuron is broadly tuned, so on its own it can’t tell you which way the arm moved. Combine many neurons into a population vector and the direction pops out, accurately enough to drive a robotic arm.</p>
+  </header>
+
+  <div class="toolbar" role="group" aria-label="Controls">
+    <div class="group">
+      <span class="lbl" id="nLbl">Neurons recorded</span>
+      <div class="seg" role="group" aria-labelledby="nLbl" id="nSeg"></div>
+    </div>
+    <div class="group">
+      <button class="btn primary" id="trialBtn">Run a trial</button>
+      <button class="btn" id="all8Btn">Run all 8 directions</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <section class="panel" aria-label="Center-out task">
+      <h2>Center-out task</h2>
+      <p class="hint">Click a target (or anywhere around the circle) to cue a movement. Gray: the monkey’s real hand. Red: a cursor driven only by the decoded population vector.</p>
+      <canvas id="task" tabindex="0" aria-label="Center-out reaching task with eight targets"></canvas>
+      <div class="readout" id="trialTxt" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-label="Population vector">
+      <h2>Population vector</h2>
+      <p class="hint">Each black line is one neuron, pointing in its preferred direction, with length set by how much its firing changed. The red arrow is their sum.</p>
+      <canvas id="pop" aria-label="Population vector for the last trial"></canvas>
+      <div class="row">
+        <div class="seg" role="group" aria-label="Population view">
+          <button data-view="last" aria-pressed="true">Last trial</button>
+          <button data-view="all8">All 8 directions</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="ln" style="background:var(--ink)"></i>Single neurons</span>
+        <span><i class="ln" style="background:var(--pv)"></i>Population vector</span>
+        <span><i class="ln" style="background:var(--muted)"></i>Actual movement (dashed)</span>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Single neuron">
+      <h2>One neuron, all directions</h2>
+      <p class="hint">Rasters aligned to movement onset (red line at 0 ms), one row per trial, arranged by movement direction. Yellow: more firing than baseline; blue: less.</p>
+      <div class="row" style="margin-top:0">
+        <label class="lbl" for="neuronSel">Neuron</label>
+        <select id="neuronSel"></select>
+        <button class="btn" id="recordBtn">Record 6 trials per direction</button>
+      </div>
+      <canvas id="raster" aria-label="Spike rasters for each movement direction"></canvas>
+      <canvas id="tuning" aria-label="Tuning curve: firing rate versus movement direction"></canvas>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <section class="panel" aria-label="Decoding accuracy">
+        <h2>How many neurons does it take?</h2>
+        <p class="hint">Average decoding error over 800 simulated movements in random directions.</p>
+        <canvas id="acc" aria-label="Decoding error versus number of neurons"></canvas>
+      </section>
+      <section class="panel" aria-label="Explanation"><div id="story" aria-live="polite"></div></section>
+    </div>
+  </div>
+
+  <p class="note">Simplified, illustrative model. Each neuron fires at baseline + depth × cos(movement direction − preferred direction), with Poisson spike noise, from about 150 ms before movement onset until the movement ends. Preferred directions are spread evenly at random. The population vector weights each neuron’s preferred direction by its change in firing from baseline, as in Georgopoulos’s experiments.</p>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const wrap360 = d => ((d % 360) + 360) % 360;
+const angErr = (a, b) => { const d = Math.abs(wrap360(a - b)); return Math.min(d, 360 - d); };
+const FONT = (w, s) => `${w} ${s}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+let COL = {};
+function hex(h){ h = h.trim().replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i, i+2), 16)); }
+function readColors(){ const cs = getComputedStyle(document.documentElement);
+  ['ink','muted','line','panel','pv','hand','up','down','target','work'].forEach(k => COL[k] = hex(cs.getPropertyValue('--' + k))); }
+const rgb = (a, al) => al == null ? `rgb(${a})` : `rgba(${a[0]},${a[1]},${a[2]},${al})`;
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); drawAll(); });
+
+/* ---------- random ---------- */
+function mulberry(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const R0 = mulberry(12345);
+function poisson(lam, R = Math.random){
+  if (lam < 30){ const L = Math.exp(-lam); let k = 0, p = 1; do { k++; p *= R(); } while (p > L); return k - 1; }
+  const u = R(), v = R(); return Math.max(0, Math.round(lam + Math.sqrt(lam) * Math.sqrt(-2 * Math.log(u + 1e-12)) * Math.cos(2 * Math.PI * v)));
+}
+
+/* ---------- neurons ---------- */
+const NMAX = 500;
+const NEURONS = [];
+for (let i = 0; i < NMAX; i++){
+  NEURONS.push({pd: R0() * 360, b: 12 + R0() * 14, m: 8 + R0() * 16});
+}
+// the first few neurons are the ones you can look at individually
+const SHOW = [{pd:160, b:32, m:22}, {pd:40, b:20, m:15}, {pd:285, b:16, m:12}, {pd:95, b:24, m:18}];
+SHOW.forEach((n, i) => NEURONS[i] = n);
+const rateFor = (n, dir) => Math.max(0, n.b + n.m * Math.cos(rad(dir - n.pd)));
+const WIN = 0.5;   // counting window: −150 to +350 ms around movement onset
+
+/* ---------- state ---------- */
+const NS = [1, 3, 10, 30, 100, 300];
+const st = {N:30, view:'last', neuron:0, last:null, all8:null, anim:null, rasters:Array.from({length:8}, () => [])};
+
+function decode(dir, N, R = Math.random){
+  let x = 0, y = 0; const contrib = [];
+  for (let i = 0; i < N; i++){
+    const n = NEURONS[i], count = poisson(rateFor(n, dir) * WIN, R), r = count / WIN;
+    const w = (r - n.b) / n.m;
+    x += w * Math.cos(rad(n.pd)); y += w * Math.sin(rad(n.pd));
+    contrib.push({pd:n.pd, w, r});
+  }
+  const dec = wrap360(deg(Math.atan2(y, x)));
+  return {dir, dec, err:angErr(dir, dec), mag:Math.hypot(x, y), contrib};
+}
+
+/* spike trains for the single-neuron rasters: −1000 to +1000 ms */
+function spikeTrain(n, dir){
+  const out = [];
+  for (let t = -1000; t < 1000; t++){
+    const g = t < -250 ? 0 : t < -150 ? (t + 250) / 100 : t < 350 ? 1 : t < 450 ? (450 - t) / 100 : 0;
+    const r = n.b + (rateFor(n, dir) - n.b) * g;
+    if (Math.random() < r / 1000) out.push(t);
+  }
+  return out;
+}
+
+/* ---------- task ---------- */
+const DIRS = [0, 45, 90, 135, 180, 225, 270, 315];
+function runTrial(dir){
+  const res = decode(dir, st.N);
+  st.last = res;
+  // also record the selected neuron's raster if the direction is one of the 8
+  const di = DIRS.indexOf(Math.round(dir) % 360);
+  if (di >= 0){
+    const rows = st.rasters[di]; rows.push(spikeTrain(NEURONS[st.neuron], dir)); if (rows.length > 6) rows.shift();
+  }
+  st.lastNeuronRate = rateFor(NEURONS[st.neuron], dir) + (Math.random() - .5) * 6;
+  st.anim = {t0:performance.now(), dir, dec:res.dec};
+  $('trialTxt').innerHTML = `<span>Target <b>${Math.round(dir)}°</b> · Decoded <b>${Math.round(res.dec)}°</b> · Error <b>${Math.round(res.err)}°</b> (${st.N} neuron${st.N > 1 ? 's' : ''})</span>`;
+  drawAll(); renderStory();
+  return res;
+}
+// play the 8 directions one after another in the task, filling the “All 8 directions” view as it goes
+let all8Timer = null;
+function stopAll8(){ clearTimeout(all8Timer); all8Timer = null; setBusy(false); }
+function setBusy(b){ $('all8Btn').disabled = b; $('trialBtn').disabled = b; $('all8Btn').textContent = b ? 'Running 8 directions…' : 'Run all 8 directions'; }
+function runAll8(){
+  stopAll8();
+  st.all8 = []; st.view = 'all8'; syncView(); setBusy(true);
+  let i = 0;
+  const next = () => {
+    st.all8.push(runTrial(DIRS[i]));
+    drawPop();
+    i++;
+    if (i < DIRS.length) all8Timer = setTimeout(next, 1000);
+    else { all8Timer = setTimeout(stopAll8, 900); }
+  };
+  next();
+}
+function recordNeuron(){
+  st.rasters = DIRS.map(d => Array.from({length:6}, () => spikeTrain(NEURONS[st.neuron], d)));
+  drawRaster(); drawTuning(); renderStory();
+}
+
+/* ---------- canvas helpers ---------- */
+function fit(cv){
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)){ cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h); return {c, w, h};
+}
+function arrow(c, x0, y0, x1, y1, col, wdt, head){
+  c.strokeStyle = col; c.fillStyle = col; c.lineWidth = wdt; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+  const a = Math.atan2(y1 - y0, x1 - x0), hs = head || 10;
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x1 - hs * Math.cos(a - .4), y1 - hs * Math.sin(a - .4)); c.lineTo(x1 - hs * Math.cos(a + .4), y1 - hs * Math.sin(a + .4)); c.closePath(); c.fill();
+}
+
+/* ---------- task drawing ---------- */
+let taskGeom = null;
+function drawTask(now){
+  const {c, w, h} = fit($('task')), cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.36;
+  taskGeom = {cx, cy, R};
+  c.fillStyle = rgb(COL.work); c.beginPath(); c.arc(cx, cy, R * 1.22, 0, 2 * Math.PI); c.fill();
+  c.strokeStyle = rgb(COL.line); c.setLineDash([4, 5]); c.beginPath(); c.arc(cx, cy, R, 0, 2 * Math.PI); c.stroke(); c.setLineDash([]);
+  const an = st.anim, el = an ? (now - an.t0) / 1000 : 9;
+  // targets
+  DIRS.forEach(d => {
+    const x = cx + R * Math.cos(rad(d)), y = cy - R * Math.sin(rad(d));
+    const lit = an && Math.abs(wrap360(an.dir) - d) < 0.5 && el < 2.2;
+    c.beginPath(); c.arc(x, y, lit ? 15 : 12, 0, 2 * Math.PI); c.fillStyle = lit ? rgb(COL.target) : rgb(COL.panel); c.fill();
+    c.strokeStyle = rgb(COL.muted); c.lineWidth = 1.5; c.stroke();
+    c.fillStyle = rgb(COL.muted); c.font = FONT(400, 12); c.textAlign = 'center';
+    c.fillText(d + '°', cx + (R + 34) * Math.cos(rad(d)), cy - (R + 34) * Math.sin(rad(d)) + 4);
+  });
+  if (an && DIRS.indexOf(Math.round(an.dir)) < 0 && el < 2.2){
+    const x = cx + R * Math.cos(rad(an.dir)), y = cy - R * Math.sin(rad(an.dir));
+    c.beginPath(); c.arc(x, y, 13, 0, 2 * Math.PI); c.fillStyle = rgb(COL.target); c.fill();
+  }
+  // movement: cue at 0, move from 0.35 s to 0.85 s
+  const p = an ? clamp((el - 0.35) / 0.5, 0, 1) : 0, ease = p * p * (3 - 2 * p);
+  const pos = d => [cx + R * ease * Math.cos(rad(d)), cy - R * ease * Math.sin(rad(d))];
+  if (an){
+    const [hx, hy] = pos(an.dir), [dx, dy] = pos(an.dec);
+    c.strokeStyle = rgb(COL.hand, .6); c.lineWidth = 3; c.beginPath(); c.moveTo(cx, cy); c.lineTo(hx, hy); c.stroke();
+    c.strokeStyle = rgb(COL.pv, .7); c.beginPath(); c.moveTo(cx, cy); c.lineTo(dx, dy); c.stroke();
+    c.beginPath(); c.arc(hx, hy, 10, 0, 2 * Math.PI); c.fillStyle = rgb(COL.hand); c.fill();
+    c.beginPath(); c.arc(dx, dy, 8, 0, 2 * Math.PI); c.fillStyle = rgb(COL.pv); c.fill();
+  } else {
+    c.beginPath(); c.arc(cx, cy, 10, 0, 2 * Math.PI); c.fillStyle = rgb(COL.hand); c.fill();
+  }
+  c.beginPath(); c.arc(cx, cy, 4, 0, 2 * Math.PI); c.fillStyle = rgb(COL.ink); c.fill();
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 12.5); c.textAlign = 'left';
+  if (an && el < 0.35) c.fillText('Light on… reaction time', 10, 20);
+  else if (an && el < 0.85) c.fillText('Moving', 10, 20);
+}
+$('task').addEventListener('click', e => {
+  if (!taskGeom || all8Timer) return;
+  const r = $('task').getBoundingClientRect(), x = e.clientX - r.left - taskGeom.cx, y = -(e.clientY - r.top - taskGeom.cy);
+  if (Math.hypot(x, y) < taskGeom.R * 0.35) return;
+  let d = wrap360(deg(Math.atan2(y, x)));
+  const near = DIRS.find(t => angErr(t, d) < 9); if (near != null) d = near;
+  runTrial(Math.round(d));
+});
+$('task').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); runTrial(DIRS[Math.floor(Math.random() * 8)]); }
+});
+
+/* ---------- population drawing ---------- */
+function bouquet(c, cx, cy, L, res, opts){
+  const n = res.contrib.length, scale = L * 0.32;
+  c.lineWidth = n > 100 ? 0.7 : n > 20 ? 1 : 1.6; c.strokeStyle = rgb(COL.ink, n > 100 ? .5 : .75);
+  c.beginPath();
+  res.contrib.forEach(k => { const len = clamp(k.w, -2.5, 2.5) * scale; c.moveTo(cx, cy); c.lineTo(cx + len * Math.cos(rad(k.pd)), cy - len * Math.sin(rad(k.pd))); });
+  c.stroke();
+  // actual direction
+  c.setLineDash([5, 5]); c.strokeStyle = rgb(COL.muted); c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(cx - L * 1.05 * Math.cos(rad(res.dir)), cy + L * 1.05 * Math.sin(rad(res.dir))); c.lineTo(cx + L * 1.15 * Math.cos(rad(res.dir)), cy - L * 1.15 * Math.sin(rad(res.dir))); c.stroke(); c.setLineDash([]);
+  arrow(c, cx, cy, cx + L * 1.1 * Math.cos(rad(res.dec)), cy - L * 1.1 * Math.sin(rad(res.dec)), rgb(COL.pv), opts.small ? 3 : 4, opts.small ? 9 : 14);
+}
+function drawPop(){
+  const {c, w, h} = fit($('pop')), cx = w / 2, cy = h / 2;
+  if (st.view === 'all8'){
+    if (!st.all8){ c.fillStyle = rgb(COL.muted); c.font = FONT(400, 14); c.textAlign = 'center'; c.fillText('Press “Run all 8 directions”', cx, cy); return; }
+    const R = Math.min(w, h) * 0.32, L = Math.min(w, h) * 0.13;
+    c.setLineDash([3, 5]); c.strokeStyle = rgb(COL.line); c.beginPath(); c.moveTo(cx - R * 1.4, cy); c.lineTo(cx + R * 1.4, cy); c.moveTo(cx, cy - R * 1.4); c.lineTo(cx, cy + R * 1.4); c.stroke(); c.setLineDash([]);
+    st.all8.forEach(res => bouquet(c, cx + R * Math.cos(rad(res.dir)), cy - R * Math.sin(rad(res.dir)), L, res, {small:true}));
+    c.fillStyle = rgb(COL.muted); c.font = FONT(400, 12); c.textAlign = 'left';
+    c.fillText('0°', cx + R * 1.35, cy - 6); c.fillText('90°', cx + 6, cy - R * 1.32);
+    if (!st.all8.length) return;
+    const me = st.all8.reduce((a, r) => a + r.err, 0) / st.all8.length;
+    c.fillStyle = rgb(COL.ink); c.font = FONT(700, 13);
+    c.fillText(`${st.N} neuron${st.N > 1 ? 's' : ''}: mean error ${me.toFixed(0)}°${st.all8.length < 8 ? ` (${st.all8.length} of 8 directions so far)` : ''}`, 10, 20);
+    return;
+  }
+  if (!st.last){ c.fillStyle = rgb(COL.muted); c.font = FONT(400, 14); c.textAlign = 'center'; c.fillText('Run a trial to see the population vector', cx, cy); return; }
+  const L = Math.min(w, h) * 0.38;
+  c.strokeStyle = rgb(COL.line); c.beginPath(); c.arc(cx, cy, L, 0, 2 * Math.PI); c.stroke();
+  bouquet(c, cx, cy, L, st.last, {});
+  c.fillStyle = rgb(COL.ink); c.font = FONT(700, 13); c.textAlign = 'left';
+  c.fillText(`Actual ${Math.round(st.last.dir)}°   Decoded ${Math.round(st.last.dec)}°   Error ${Math.round(st.last.err)}°`, 10, 20);
+}
+
+/* ---------- raster drawing (slide layout) ---------- */
+function drawRaster(){
+  const {c, w, h} = fit($('raster')), cx = w / 2, cy = h / 2, n = NEURONS[st.neuron];
+  const bw = w * 0.235, bh = h * 0.088, Rx = w * 0.36, Ry = h * 0.405;
+  // compass
+  const cr = Math.min(w, h) * 0.085;
+  c.fillStyle = rgb(COL.up, .55); c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, cr, -rad(n.pd + 90), -rad(n.pd - 90)); c.closePath(); c.fill();
+  c.fillStyle = rgb(COL.down, .55); c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, cr, -rad(n.pd - 90), -rad(n.pd - 270)); c.closePath(); c.fill();
+  c.strokeStyle = rgb(COL.ink, .6); c.lineWidth = 1;
+  DIRS.forEach(d => { c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + cr * 1.05 * Math.cos(rad(d)), cy - cr * 1.05 * Math.sin(rad(d))); c.stroke(); });
+  DIRS.forEach((d, i) => {
+    const bx = cx + Rx * Math.cos(rad(d)) - bw / 2, by = cy - Ry * Math.sin(rad(d)) - bh / 2;
+    const rows = st.rasters[i];
+    const T = t => bx + (t + 1000) / 2000 * bw;
+    // window shading
+    const mean = rateFor(n, d), up = mean >= n.b;
+    if (rows.length){ c.fillStyle = rgb(up ? COL.up : COL.down, .45); c.fillRect(T(-250), by - 2, T(450) - T(-250), bh + 4); }
+    c.strokeStyle = rgb(COL.line); c.strokeRect(bx, by, bw, bh);
+    c.strokeStyle = rgb(COL.ink); c.lineWidth = 1; c.beginPath();
+    const rh = bh / 6;
+    rows.forEach((sp, r) => sp.forEach(t => { const x = Math.round(T(t)) + .5; c.moveTo(x, by + r * rh + 1); c.lineTo(x, by + (r + 1) * rh - 1); }));
+    c.stroke();
+    c.strokeStyle = rgb(COL.pv); c.lineWidth = 2; c.beginPath(); c.moveTo(T(0), by - 2); c.lineTo(T(0), by + bh + 2); c.stroke();
+    c.fillStyle = rgb(COL.muted); c.font = FONT(400, 10); c.textAlign = 'center';
+    [-1000, 0, 1000].forEach(t => c.fillText(t, clamp(T(t), bx + 10, bx + bw - 12), by + bh + 12));
+    c.font = FONT(700, 11.5); c.fillStyle = rgb(COL.ink); c.fillText(d + '°', cx + (cr + 14) * Math.cos(rad(d)), cy - (cr + 14) * Math.sin(rad(d)) + 4);
+  });
+  if (st.rasters.every(r => !r.length)){ c.fillStyle = rgb(COL.muted); c.font = FONT(400, 13); c.textAlign = 'center'; c.fillText('Press “Record 6 trials per direction”', cx, h - 8); }
+}
+
+/* ---------- tuning curve ---------- */
+function drawTuning(){
+  const {c, w, h} = fit($('tuning')), n = NEURONS[st.neuron];
+  const x0 = 50, x1 = w - 10, y0 = 14, y1 = h - 36, ymax = 70;
+  const X = d => x0 + d / 360 * (x1 - x0), Y = v => y1 - v / ymax * (y1 - y0);
+  c.fillStyle = rgb(COL.work); c.fillRect(x0, y0, x1 - x0, y1 - y0);
+  c.strokeStyle = rgb(COL.line); c.lineWidth = 1;
+  [0, 20, 40, 60].forEach(v => { c.beginPath(); c.moveTo(x0, Y(v) + .5); c.lineTo(x1, Y(v) + .5); c.stroke(); c.fillStyle = rgb(COL.muted); c.font = FONT(400, 11); c.textAlign = 'right'; c.fillText(v, x0 - 5, Y(v) + 4); });
+  c.textAlign = 'center'; [0, 45, 135, 225, 315].forEach(d => c.fillText(d + '°', X(d), y1 + 14));
+  c.fillText('Direction of movement', (x0 + x1) / 2, h - 4);
+  c.save(); c.translate(12, (y0 + y1) / 2); c.rotate(-Math.PI / 2); c.fillText('Impulses/s', 0, 0); c.restore();
+  // measured points
+  const pts = [];
+  DIRS.forEach((d, i) => { const rows = st.rasters[i]; if (!rows.length) return;
+    const r = rows.reduce((a, sp) => a + sp.filter(t => t >= -150 && t < 350).length / 0.5, 0) / rows.length; pts.push([d, r]); });
+  if (pts.length >= 3){
+    // least-squares cosine fit
+    let A = [[0,0,0],[0,0,0],[0,0,0]], B = [0,0,0];
+    pts.forEach(([d, r]) => { const f = [1, Math.cos(rad(d)), Math.sin(rad(d))]; for (let i = 0; i < 3; i++){ B[i] += f[i] * r; for (let j = 0; j < 3; j++) A[i][j] += f[i] * f[j]; } });
+    const sol = solve3(A, B);
+    if (sol){
+      st.fit = sol;
+      c.strokeStyle = rgb(COL.ink); c.lineWidth = 2.5; c.beginPath();
+      for (let d = 0; d <= 360; d += 3){ const v = sol[0] + sol[1] * Math.cos(rad(d)) + sol[2] * Math.sin(rad(d)); d ? c.lineTo(X(d), Y(v)) : c.moveTo(X(d), Y(v)); }
+      c.stroke();
+      // ambiguity: a single observed rate maps to two directions
+      const amp = Math.hypot(sol[1], sol[2]), pd = wrap360(deg(Math.atan2(sol[2], sol[1])));
+      const obs = st.lastNeuronRate;
+      if (obs != null && st.last){
+        const ratio = clamp((obs - sol[0]) / amp, -0.999, 0.999), off = deg(Math.acos(ratio));
+        const c1 = wrap360(pd + off), c2 = wrap360(pd - off);
+        c.setLineDash([4, 4]); c.strokeStyle = rgb(COL.pv); c.lineWidth = 1.5; c.beginPath(); c.moveTo(x0, Y(obs)); c.lineTo(x1, Y(obs)); c.stroke(); c.setLineDash([]);
+        [c1, c2].forEach(cd => { c.beginPath(); c.arc(X(cd), Y(obs), 6, 0, 2 * Math.PI); c.fillStyle = rgb(COL.pv); c.fill(); });
+        c.fillStyle = rgb(COL.pv); c.font = FONT(700, 11.5); c.textAlign = 'left';
+        c.fillText(`Last trial: ${Math.round(obs)} spikes/s → ${Math.round(c1)}° or ${Math.round(c2)}°?`, x0 + 6, y0 + 14);
+      }
+    }
+  } else { c.fillStyle = rgb(COL.muted); c.font = FONT(400, 12.5); c.textAlign = 'center'; c.fillText('Record trials to build the tuning curve', (x0 + x1) / 2, (y0 + y1) / 2); }
+  pts.forEach(([d, r]) => { c.beginPath(); c.arc(X(d), Y(r), 4.5, 0, 2 * Math.PI); c.fillStyle = rgb(COL.ink); c.fill(); });
+}
+function solve3(A, b){
+  const M = A.map((r, i) => [...r, b[i]]);
+  for (let i = 0; i < 3; i++){
+    let p = i; for (let k = i + 1; k < 3; k++) if (Math.abs(M[k][i]) > Math.abs(M[p][i])) p = k;
+    [M[i], M[p]] = [M[p], M[i]]; if (Math.abs(M[i][i]) < 1e-9) return null;
+    for (let k = 0; k < 3; k++) if (k !== i){ const f = M[k][i] / M[i][i]; for (let j = i; j < 4; j++) M[k][j] -= f * M[i][j]; }
+  }
+  return M.map((r, i) => r[3] / r[i]);
+}
+
+/* ---------- accuracy curve ---------- */
+const ACC_N = [1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500];
+let accData = null;
+function computeAcc(){
+  const R = mulberry(777);
+  accData = ACC_N.map(N => { let s = 0; for (let t = 0; t < 800; t++) s += decode(R() * 360, N, R).err; return [N, s / 800]; });
+}
+function drawAcc(){
+  const {c, w, h} = fit($('acc'));
+  const x0 = 50, x1 = w - 12, y0 = 12, y1 = h - 34, ymax = 100;
+  const X = n => x0 + Math.log10(n) / Math.log10(500) * (x1 - x0), Y = v => y1 - Math.min(v, ymax) / ymax * (y1 - y0);
+  c.strokeStyle = rgb(COL.line); c.lineWidth = 1;
+  [0, 25, 50, 75, 100].forEach(v => { c.beginPath(); c.moveTo(x0, Y(v) + .5); c.lineTo(x1, Y(v) + .5); c.stroke(); c.fillStyle = rgb(COL.muted); c.font = FONT(400, 11); c.textAlign = 'right'; c.fillText(v + '°', x0 - 5, Y(v) + 4); });
+  c.textAlign = 'center'; [1, 10, 100, 500].forEach(n => c.fillText(n, X(n), y1 + 14));
+  c.fillText('Number of neurons (log scale)', (x0 + x1) / 2, h - 4);
+  c.save(); c.translate(12, (y0 + y1) / 2); c.rotate(-Math.PI / 2); c.fillText('Average error', 0, 0); c.restore();
+  c.strokeStyle = rgb(COL.pv); c.lineWidth = 2.5; c.beginPath();
+  accData.forEach(([n, e], i) => i ? c.lineTo(X(n), Y(e)) : c.moveTo(X(n), Y(e))); c.stroke();
+  accData.forEach(([n, e]) => { c.beginPath(); c.arc(X(n), Y(e), 3.5, 0, 2 * Math.PI); c.fillStyle = rgb(COL.pv); c.fill(); });
+  const cur = accData.find(a => a[0] === st.N);
+  if (cur){ c.beginPath(); c.arc(X(cur[0]), Y(cur[1]), 8, 0, 2 * Math.PI); c.strokeStyle = rgb(COL.ink); c.lineWidth = 2; c.stroke();
+    c.fillStyle = rgb(COL.ink); c.font = FONT(700, 12); c.textAlign = X(cur[0]) > x1 - 120 ? 'right' : 'left';
+    c.fillText(`${st.N}: about ${Math.round(cur[1])}°`, X(cur[0]) + (c.textAlign === 'right' ? -12 : 12), Y(cur[1]) - 8); }
+}
+
+/* ---------- story ---------- */
+function renderStory(){
+  const N = st.N, cur = accData.find(a => a[0] === N);
+  let h = `<h3>Decoding from ${N} neuron${N > 1 ? 's' : ''}</h3>`;
+  h += '<p>Each upper motor neuron fires most for movements in its <b>preferred direction</b> and less for others, but its tuning is broad: firing changes gradually over about 180°. A given firing rate is consistent with two different directions, and spike counts vary from trial to trial.</p>';
+  let now;
+  if (N === 1) now = `With one neuron, the “population vector” can only point along that neuron’s preferred direction or opposite to it, so the decoded direction is usually far off (about ${Math.round(cur[1])}° on average). <b>Individual neurons are tuned too broadly to predict direction.</b>`;
+  else if (N <= 10) now = `With ${N} neurons the estimate is rough (about ${Math.round(cur[1])}° off on average): there are only a few preferred directions to combine, and noise in each neuron still matters.`;
+  else now = `With ${N} neurons, each neuron “votes” for its preferred direction in proportion to how much its firing changed. Errors in individual neurons average out, so the population vector lands within about ${Math.round(cur[1])}° of the real movement. <b>By comparing populations of neurons, one can calculate a direction of movement.</b>`;
+  h += `<p class="now">${now}</p>`;
+  if (st.last) h += `<p>Last trial: the hand moved toward ${Math.round(st.last.dir)}°; the population vector pointed to ${Math.round(st.last.dec)}° (${Math.round(st.last.err)}° off). This is the principle behind brain–machine interfaces that let monkeys and people control robotic arms with motor cortex activity.</p>`;
+  $('story').innerHTML = h;
+}
+
+/* ---------- controls ---------- */
+NS.forEach(n => { const b = document.createElement('button'); b.textContent = n; b.dataset.n = n; $('nSeg').appendChild(b);
+  b.addEventListener('click', () => { stopAll8(); st.N = n; st.all8 = null; st.last = null; $('trialTxt').textContent = ''; syncN(); drawAll(); renderStory(); }); });
+function syncN(){ document.querySelectorAll('[data-n]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.n === st.N ? 'true' : 'false')); }
+function syncView(){ document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === st.view ? 'true' : 'false')); }
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { st.view = b.dataset.view; syncView(); drawPop(); }));
+SHOW.forEach((n, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `Neuron ${'ABCD'[i]}`; $('neuronSel').appendChild(o); });
+$('neuronSel').addEventListener('change', e => { st.neuron = +e.target.value; st.rasters = DIRS.map(() => []); st.lastNeuronRate = null; drawRaster(); drawTuning(); });
+$('trialBtn').addEventListener('click', () => runTrial(DIRS[Math.floor(Math.random() * 8)]));
+$('all8Btn').addEventListener('click', runAll8);
+$('recordBtn').addEventListener('click', recordNeuron);
+window.addEventListener('resize', () => drawAll());
+
+function drawAll(){ drawPop(); drawRaster(); drawTuning(); drawAcc(); }
+function frame(now){ drawTask(now); requestAnimationFrame(frame); }
+computeAcc(); syncN(); syncView(); drawAll(); renderStory();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
