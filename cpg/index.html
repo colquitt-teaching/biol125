@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GSL8D700XD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GSL8D700XD');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Central pattern generator for locomotion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#E8ECF1; --panel:#FFFFFF; --ink:#16202D; --muted:#556174; --line:#CDD5DF; --focus:#1D6BD0; --link:#1D6BD0;
+  --exc:#E39A62; --inh:#3A9AD9; --mn:#7FBFA4; --box:#E9E1D2; --flex:#D9772E; --ext:#2B7FB8; --gone:#B7BDC6;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF; --link:#4D9CFF;
+    --exc:#F0A56B; --inh:#55B2EE; --mn:#86CDB0; --box:#2D2923; --flex:#F08A3E; --ext:#4FA3E0; --gone:#4A5260;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0C131C; --panel:#141E2A; --ink:#E3E9F1; --muted:#97A3B6; --line:#2A3747; --focus:#4D9CFF; --link:#4D9CFF;
+  --exc:#F0A56B; --inh:#55B2EE; --mn:#86CDB0; --box:#2D2923; --flex:#F08A3E; --ext:#4FA3E0; --gone:#4A5260;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.5}
+.wrap{max-width:1380px;margin:0 auto;padding:22px clamp(12px,3vw,32px) 40px}
+.back{display:inline-block;margin:0 0 10px;color:var(--link);font-weight:700;text-decoration:none}
+.back:hover{text-decoration:underline}
+header h1{font-size:clamp(1.55rem,2.7vw,2.2rem);line-height:1.15;margin:0 0 6px;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:84ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;margin:18px 0 14px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lbl{font-weight:700;font-size:.95rem}
+.btn{font:inherit;font-size:.93rem;background:transparent;color:var(--ink);padding:7px 12px;cursor:pointer;border:1px solid var(--line);border-radius:8px}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+input[type=range]{width:180px;accent-color:var(--ink)}
+.val{font-weight:700;min-width:3.4em;font-variant-numeric:tabular-nums}
+.main{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1000px){.main{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px}
+.panel h2{font-size:1.08rem;margin:0 0 4px}
+.hint{margin:0 0 8px;font-size:.88rem;color:var(--muted)}
+#circuit{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.right{display:flex;flex-direction:column;gap:16px}
+#traces{display:block;width:100%;height:330px}
+.status{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline;margin:4px 0 6px}
+.big{font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums}
+.status small{color:var(--muted);font-size:.88rem}
+.legrow{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:center}
+@media (max-width:560px){.legrow{grid-template-columns:1fr}}
+#leg{display:block;width:100%;max-width:200px;height:auto}
+#story h3{font-size:1.04rem;margin:0 0 6px}
+#story p{margin:0 0 8px;font-size:.95rem}
+#story .now{padding:9px 12px;border-left:4px solid var(--flex);background:color-mix(in srgb,var(--flex) 9%,transparent);border-radius:0 8px 8px 0}
+.note{margin:18px 2px 0;font-size:.86rem;color:var(--muted);max-width:115ch}
+.node{cursor:pointer}
+.node:hover circle.c,.node:focus circle.c{stroke-width:3}
+.t-node{font-size:13px;font-weight:700;fill:#1b1b1b;text-anchor:middle;pointer-events:none}
+.t-lab{font-size:12.5px;fill:var(--muted)}
+.t-head{font-size:13px;font-weight:700;fill:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">All BIOL125 simulations</a>
+    <h1>Central pattern generator for locomotion</h1>
+    <p>This spinal circuit produces alternating flexor and extensor bursts on its own, with only a steady drive as input. Click any neuron to remove it and see what happens to the rhythm and to the alternation between flexor and extensor muscles.</p>
+  </header>
+
+  <div class="toolbar" role="group" aria-label="Controls">
+    <div class="group">
+      <label class="lbl" for="drive">Tonic drive</label>
+      <input type="range" id="drive" min="0" max="100" step="5" value="60">
+      <span class="val" id="driveTxt">60%</span>
+    </div>
+    <div class="group">
+      <button class="btn" id="restoreBtn">Restore all neurons</button>
+      <button class="btn" id="noInhBtn">Remove all inhibitory neurons</button>
+      <button class="btn" id="pauseBtn" aria-pressed="false">Pause</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <section class="panel" aria-label="CPG circuit">
+      <h2>Spinal circuit (slide 43)</h2>
+      <p class="hint">Click a neuron to remove it; click again to restore it. Brighter neurons are more active.</p>
+      <svg id="circuit" viewBox="0 0 560 400" role="img" aria-label="Central pattern generator circuit with rhythm-generating, inhibitory, excitatory and motor neurons">
+        <g id="cStatic"></g><g id="cEdges"></g><g id="cNodes"></g>
+      </svg>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--exc)"></i>Excitatory neuron (E)</span>
+        <span><i class="dot" style="background:var(--inh)"></i>Inhibitory neuron (I)</span>
+        <span><i class="dot" style="background:var(--mn)"></i>α motor neuron (M)</span>
+      </div>
+    </section>
+
+    <div class="right">
+      <section class="panel" aria-label="Output">
+        <h2>Output</h2>
+        <div class="status">
+          <span class="big" id="freqTxt">–</span>
+          <span id="altTxt"></span>
+        </div>
+        <canvas id="traces" aria-label="Activity of rhythm generators and flexor and extensor motor output"></canvas>
+      </section>
+      <section class="panel" aria-label="Leg">
+        <div class="legrow">
+          <svg id="leg" viewBox="0 0 200 200" role="img" aria-label="Leg driven by the flexor and extensor muscles"></svg>
+          <div id="story" aria-live="polite"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <p class="note">Simplified, illustrative rate model based on the slide’s circuit. Each E/R population bursts on its own because of strong recurrent excitation and slow adaptation; the two halves differ slightly in their natural speed, and reciprocal inhibition locks them in alternation. Motor neurons also receive a weak steady excitation, which the rIa interneurons normally suppress during the antagonist’s phase. Rhythms here are slowed so they are easy to follow.</p>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const Sg = (u, k) => 1 / (1 + Math.exp(-u / k));
+const FONT = (w, s) => `${w} ${s}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+let COL = {};
+function hex(h){ h = h.trim().replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i, i+2), 16)); }
+function readColors(){ const cs = getComputedStyle(document.documentElement);
+  ['ink','muted','line','panel','exc','inh','mn','flex','ext','gone','box'].forEach(k => COL[k] = hex(cs.getPropertyValue('--' + k))); }
+const rgb = (a, al) => al == null ? `rgb(${a})` : `rgba(${a[0]},${a[1]},${a[2]},${al})`;
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+
+/* ---------- neurons ---------- */
+const N = {
+  erF:{x:120, y:90,  r:28, type:'exc', label:'E/R', name:'flexor rhythm-generating neuron (E/R)'},
+  erE:{x:120, y:290, r:28, type:'exc', label:'E/R', name:'extensor rhythm-generating neuron (E/R)'},
+  iF: {x:96,  y:200, r:15, type:'inh', label:'I',   name:'reciprocal inhibitory neuron driven by the flexor side'},
+  iE: {x:146, y:176, r:15, type:'inh', label:'I',   name:'reciprocal inhibitory neuron driven by the extensor side'},
+  eF: {x:262, y:90,  r:16, type:'exc', label:'E',   name:'flexor excitatory neuron (E)'},
+  eE: {x:262, y:290, r:16, type:'exc', label:'E',   name:'extensor excitatory neuron (E)'},
+  rF: {x:292, y:172, r:15, type:'inh', label:'I',   name:'rIa interneuron driven by the flexor side'},
+  rE: {x:292, y:212, r:15, type:'inh', label:'I',   name:'rIa interneuron driven by the extensor side'},
+  mF: {x:400, y:90,  r:26, type:'mn',  label:'M',   name:'flexor motor neuron (M)'},
+  mE: {x:400, y:290, r:26, type:'mn',  label:'M',   name:'extensor motor neuron (M)'}
+};
+const EDGES = [
+  ['erF','eF','exc'], ['eF','mF','exc'], ['erE','eE','exc'], ['eE','mE','exc'],
+  ['erF','iF','exc'], ['iF','erE','inh'], ['erE','iE','exc'], ['iE','erF','inh'],
+  ['erF','rF','exc'], ['rF','mE','inh'], ['erE','rE','exc'], ['rE','mF','inh'],
+  ['rF','rE','inh'], ['rE','rF','inh']
+];
+const removed = new Set();
+const st = {drive:0.6, paused:false};
+const A = {erF:0.6, erE:0, aF:0, aE:0, iF:0, iE:0, rF:0, rE:0, eF:0, eE:0, mF:0, mE:0, t:0, leg:0};
+
+/* ---------- model ---------- */
+function step(dt){
+  const on = k => removed.has(k) ? 0 : 1, d = st.drive;
+  const I = -1.6 + 1.5 * d, ta = 0.25 / (0.05 + 1.6 * d), W = 4;
+  A.erF += dt / 0.015 * (-A.erF + on('erF') * Sg(7 * A.erF - 6 * A.aF + I - W * A.iE, 0.5));
+  A.erE += dt / 0.015 * (-A.erE + on('erE') * Sg(7 * A.erE - 6 * A.aE + I - W * A.iF, 0.5));
+  A.aF += dt / ta * (-A.aF + A.erF);
+  A.aE += dt / (ta * 1.35) * (-A.aE + A.erE);
+  A.iF += dt / 0.01 * (-A.iF + on('iF') * A.erF);
+  A.iE += dt / 0.01 * (-A.iE + on('iE') * A.erE);
+  A.eF += dt / 0.01 * (-A.eF + on('eF') * A.erF);
+  A.eE += dt / 0.01 * (-A.eE + on('eE') * A.erE);
+  A.rF += dt / 0.01 * (-A.rF + on('rF') * Sg(4 * A.erF - 1.5 * A.rE - 1.5, 0.3));
+  A.rE += dt / 0.01 * (-A.rE + on('rE') * Sg(4 * A.erE - 1.5 * A.rF - 1.5, 0.3));
+  const tonic = 2.2 * d;
+  A.mF += dt / 0.01 * (-A.mF + on('mF') * Sg(4 * A.eF + tonic - 2.5 * A.rE - 1.6, 0.3));
+  A.mE += dt / 0.01 * (-A.mE + on('mE') * Sg(4 * A.eE + tonic - 2.5 * A.rF - 1.6, 0.3));
+  // leg: flexion swings it forward, extension pushes it back
+  A.leg += dt * (2.2 * (A.mF - A.mE) - 1.5 * A.leg);
+  A.leg = clamp(A.leg, -0.6, 0.6);
+  A.t += dt;
+}
+
+/* ---------- circuit drawing ---------- */
+function buildCircuit(){
+  const g = $('cStatic'); g.innerHTML = '';
+  el('rect', {x:52, y:46, width:132, height:290, rx:8, fill:'var(--box)', stroke:'var(--muted)', 'stroke-dasharray':'3 3'}, g);
+  el('rect', {x:272, y:150, width:40, height:84, rx:6, fill:'var(--box)', stroke:'var(--muted)', 'stroke-dasharray':'3 3'}, g);
+  el('rect', {x:226, y:44, width:96, height:100, rx:4, fill:'none', stroke:'var(--muted)', 'stroke-dasharray':'4 4'}, g);
+  el('rect', {x:226, y:240, width:96, height:100, rx:4, fill:'none', stroke:'var(--muted)', 'stroke-dasharray':'4 4'}, g);
+  const t = (x, y, s, cls, a) => { const e = el('text', {x, y, class:cls, 'text-anchor':a || 'start'}, g); e.textContent = s; };
+  t(274, 36, 'Flexor module', 't-lab', 'middle'); t(274, 360, 'Extensor module', 't-lab', 'middle');
+  t(118, 38, 'Reciprocal inhibition', 't-lab', 'middle');
+  t(320, 196, 'rIa-INs', 't-lab');
+  // muscles
+  [['mF', 'Flexor muscles'], ['mE', 'Extensor muscles']].forEach(([k, s]) => {
+    const n = N[k];
+    el('path', {d:`M${n.x + n.r} ${n.y} L${n.x + n.r + 46} ${n.y}`, stroke:'var(--mn)', 'stroke-width':4, 'marker-end':'url(#arr)'}, g);
+    t(n.x + n.r + 56, n.y - 2, s.split(' ')[0], 't-head'); t(n.x + n.r + 56, n.y + 14, s.split(' ')[1], 't-head');
+  });
+  const defs = el('defs', {}, g);
+  const m = el('marker', {id:'arr', viewBox:'0 0 10 10', refX:6, refY:5, markerWidth:5, markerHeight:5, orient:'auto'}, defs);
+  el('path', {d:'M0 0 L10 5 L0 10 Z', fill:'var(--mn)'}, m);
+  t(18, 392, 'Rhythm generation', 't-lab'); t(232, 392, 'Pattern formation and output', 't-lab');
+}
+function edgeGeom(a, b){
+  const A1 = N[a], B1 = N[b], dx = B1.x - A1.x, dy = B1.y - A1.y, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+  // offset parallel reciprocal pairs
+  const pair = (a === 'rF' && b === 'rE') ? -7 : (a === 'rE' && b === 'rF') ? 7 : 0;
+  const ox = -uy * pair, oy = ux * pair;
+  return {x1:A1.x + ux * A1.r + ox, y1:A1.y + uy * A1.r + oy, x2:B1.x - ux * (B1.r + 5) + ox, y2:B1.y - uy * (B1.r + 5) + oy};
+}
+const edgeEls = [];
+function buildEdges(){
+  const g = $('cEdges'); g.innerHTML = ''; edgeEls.length = 0;
+  EDGES.forEach(([a, b, kind]) => {
+    const p = edgeGeom(a, b), col = kind === 'exc' ? 'var(--exc)' : 'var(--inh)';
+    const ln = el('line', {...p, stroke:col, 'stroke-width':3, 'stroke-linecap':'round'}, g);
+    const dt = el('circle', {cx:p.x2, cy:p.y2, r:5, fill:col}, g);
+    edgeEls.push({a, b, ln, dt});
+  });
+}
+const nodeEls = {};
+function buildNodes(){
+  const g = $('cNodes'); g.innerHTML = '';
+  Object.entries(N).forEach(([k, n]) => {
+    const grp = el('g', {class:'node', tabindex:0, role:'button'}, g);
+    const c = el('circle', {class:'c', cx:n.x, cy:n.y, r:n.r, stroke:'var(--ink)', 'stroke-width':1.5}, grp);
+    const tx = el('text', {class:'t-node', x:n.x, y:n.y + 4.5}, grp); tx.textContent = n.label;
+    const x = el('path', {d:`M${n.x - n.r * .7} ${n.y - n.r * .7} L${n.x + n.r * .7} ${n.y + n.r * .7} M${n.x + n.r * .7} ${n.y - n.r * .7} L${n.x - n.r * .7} ${n.y + n.r * .7}`, stroke:'var(--ink)', 'stroke-width':3, 'stroke-linecap':'round', display:'none'}, grp);
+    el('title', {}, grp).textContent = n.name[0].toUpperCase() + n.name.slice(1) + ' (click to remove or restore)';
+    const act = () => { removed.has(k) ? removed.delete(k) : removed.add(k); renderStory(); syncNodes(); };
+    grp.addEventListener('click', act);
+    grp.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+    nodeEls[k] = {grp, c, x, tx};
+  });
+}
+function syncNodes(){
+  Object.entries(nodeEls).forEach(([k, o]) => {
+    const gone = removed.has(k);
+    o.x.setAttribute('display', gone ? '' : 'none');
+    o.grp.setAttribute('aria-label', (gone ? 'Restore the ' : 'Remove the ') + N[k].name);
+    o.c.setAttribute('stroke-dasharray', gone ? '4 3' : '');
+  });
+}
+function renderCircuit(){
+  Object.entries(nodeEls).forEach(([k, o]) => {
+    const n = N[k], gone = removed.has(k), base = COL[n.type], act = clamp(A[k], 0, 1);
+    const mix = base.map((v, i) => Math.round(COL.panel[i] + (v - COL.panel[i]) * (0.22 + 0.78 * act)));
+    o.c.setAttribute('fill', gone ? rgb(COL.gone) : rgb(mix));
+    o.tx.style.opacity = gone ? .45 : 1;
+  });
+  edgeEls.forEach(e => {
+    const act = removed.has(e.a) ? 0 : clamp(A[e.a], 0, 1), op = removed.has(e.a) || removed.has(e.b) ? .15 : .25 + .75 * act;
+    e.ln.setAttribute('opacity', op); e.ln.setAttribute('stroke-width', 2 + 3 * act); e.dt.setAttribute('opacity', op);
+  });
+}
+
+/* ---------- traces ---------- */
+const samples = [];
+function drawTraces(){
+  const cv = $('traces'), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)){ cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  const x0 = 118, x1 = w - 6, win = 8, tx = t => x1 - (A.t - t) / win * (x1 - x0);
+  const rows = [['erF', 'Flexor E/R', COL.flex, false], ['erE', 'Extensor E/R', COL.ext, false], ['mF', 'Flexor muscle', COL.flex, true], ['mE', 'Extensor muscle', COL.ext, true]];
+  const rh = (h - 24) / rows.length;
+  rows.forEach(([k, name, col, emg], i) => {
+    const y0 = 4 + i * rh, y1 = y0 + rh, ym = (y0 + y1) / 2;
+    c.strokeStyle = rgb(COL.line); c.beginPath(); c.moveTo(4, Math.round(y0) + .5); c.lineTo(x1, Math.round(y0) + .5); c.stroke();
+    c.fillStyle = rgb(COL.ink); c.font = FONT(700, 12.5); c.textAlign = 'left'; c.fillText(name, 4, y0 + 18);
+    c.fillStyle = rgb(COL.muted); c.font = FONT(400, 11); c.fillText(emg ? 'motor output (EMG)' : 'activity', 4, y0 + 33);
+    if (removed.has(k)){ c.fillStyle = rgb(COL.muted); c.font = FONT(400, 12); c.fillText('removed', x0 + 6, ym + 4); }
+    if (emg){
+      c.strokeStyle = rgb(col); c.lineWidth = 1; c.beginPath();
+      samples.forEach(s => { const x = tx(s.t); if (x < x0) return; const a = s[k] * (rh / 2 - 6) * s.n; c.moveTo(x, ym - a); c.lineTo(x, ym + a); });
+      c.stroke();
+    } else {
+      const Y = v => y1 - 6 - v * (rh - 14);
+      c.fillStyle = rgb(col, .25); c.strokeStyle = rgb(col); c.lineWidth = 2; c.beginPath(); let first = true;
+      samples.forEach(s => { const x = tx(s.t); if (x < x0) return; first ? c.moveTo(x, Y(s[k])) : c.lineTo(x, Y(s[k])); first = false; });
+      c.stroke();
+    }
+  });
+  // co-activation shading
+  c.fillStyle = 'rgba(220,40,40,.12)';
+  samples.forEach(s => { if (s.mF > .45 && s.mE > .45){ const x = tx(s.t); if (x >= x0) c.fillRect(x - 1, 4 + 2 * rh, 3, 2 * rh); } });
+  c.fillStyle = rgb(COL.muted); c.font = FONT(400, 10.5); c.textAlign = 'center';
+  for (let s = 0; s <= win; s += 2){ const x = x1 - s / win * (x1 - x0); c.fillText(s ? `−${s} s` : 'now', clamp(x, x0 + 10, x1 - 12), h - 6); }
+}
+
+/* ---------- analysis ---------- */
+function analyze(){
+  const recent = samples.filter(s => s.t > A.t - 6);
+  if (recent.length < 50) return null;
+  const onsets = k => { let n = 0, ts = []; for (let i = 1; i < recent.length; i++) if (recent[i][k] > .5 && recent[i - 1][k] <= .5) ts.push(recent[i].t); return ts; };
+  const per = ts => ts.length >= 2 ? (ts[ts.length - 1] - ts[0]) / (ts.length - 1) : null;
+  const oF = onsets('erF'), oE = onsets('erE');
+  const pF = per(oF), pE = per(oE);
+  const co = recent.filter(s => s.mF > .45 && s.mE > .45).length / recent.length;
+  const fActive = recent.some(s => s.mF > .5), eActive = recent.some(s => s.mE > .5);
+  const fBurst = oF.length >= 2, eBurst = oE.length >= 2;
+  return {pF, pE, co, fActive, eActive, fBurst, eBurst};
+}
+function renderStatus(){
+  const a = analyze(); if (!a) return;
+  const P = a.pF || a.pE;
+  $('freqTxt').textContent = P ? `${(1 / P).toFixed(2)} steps/s` : 'No rhythm';
+  let alt;
+  if (!a.fActive && !a.eActive) alt = 'Both muscles silent';
+  else if (!a.fActive) alt = 'Flexor muscle silent';
+  else if (!a.eActive) alt = 'Extensor muscle silent';
+  else if (a.co > 0.08) alt = `Flexor and extensor co-contract ${Math.round(a.co * 100)}% of the time`;
+  else if (a.fBurst && a.eBurst) alt = 'Flexor and extensor alternate';
+  else alt = 'Steady output without bursts';
+  $('altTxt').innerHTML = `<small>${alt}</small>`;
+}
+
+/* ---------- leg ---------- */
+function drawLeg(){
+  const g = $('leg'); g.innerHTML = '';
+  el('line', {x1:10, y1:186, x2:190, y2:186, stroke:'var(--muted)', 'stroke-width':3}, g);
+  const hip = [100, 40], th = A.leg, L1 = 70, L2 = 70;
+  const knee = [hip[0] + L1 * Math.sin(th), hip[1] + L1 * Math.cos(th)];
+  const kneeBend = Math.max(0, A.mF - A.mE) * 0.9;
+  const foot = [knee[0] + L2 * Math.sin(th - kneeBend), knee[1] + L2 * Math.cos(th - kneeBend)];
+  el('circle', {cx:hip[0], cy:hip[1], r:8, fill:'var(--muted)'}, g);
+  el('line', {x1:hip[0], y1:hip[1], x2:knee[0], y2:knee[1], stroke:'var(--ink)', 'stroke-width':10, 'stroke-linecap':'round'}, g);
+  el('line', {x1:knee[0], y1:knee[1], x2:foot[0], y2:foot[1], stroke:'var(--ink)', 'stroke-width':8, 'stroke-linecap':'round'}, g);
+  el('line', {x1:foot[0], y1:foot[1], x2:foot[0] + 20, y2:foot[1], stroke:'var(--ink)', 'stroke-width':6, 'stroke-linecap':'round'}, g);
+  const phase = A.mF > A.mE + .2 ? 'Swing (flexors)' : A.mE > A.mF + .2 ? 'Stance (extensors)' : '';
+  const t = el('text', {x:100, y:18, class:'t-head', 'text-anchor':'middle'}, g); t.textContent = phase;
+  const l1 = el('text', {x:hip[0] - 30, y:136, class:'t-lab', 'text-anchor':'middle'}, g); l1.textContent = 'F';
+  const l2 = el('text', {x:hip[0] + 30, y:136, class:'t-lab', 'text-anchor':'middle'}, g); l2.textContent = 'E';
+  // muscle bars
+  el('rect', {x:hip[0] - 34, y:60, width:8, height:60, fill:rgb(COL.flex, .15 + .85 * A.mF), rx:3}, g);
+  el('rect', {x:hip[0] + 26, y:60, width:8, height:60, fill:rgb(COL.ext, .15 + .85 * A.mE), rx:3}, g);
+}
+
+/* ---------- story ---------- */
+const NAMES = {erF:'flexor E/R', erE:'extensor E/R', iF:'a reciprocal inhibitory neuron', iE:'a reciprocal inhibitory neuron', eF:'flexor E', eE:'extensor E', rF:'an rIa interneuron', rE:'an rIa interneuron', mF:'flexor motor neuron', mE:'extensor motor neuron'};
+function renderStory(){
+  const R = k => removed.has(k);
+  const groups = [[['erF','erE'], 'flexor E/R', 'extensor E/R', 'both E/R neurons'], [['iF','iE'], 'one reciprocal inhibitory neuron', 'one reciprocal inhibitory neuron', 'both reciprocal inhibitory neurons'],
+    [['eF','eE'], 'flexor E', 'extensor E', 'both E neurons'], [['rF','rE'], 'one rIa interneuron', 'one rIa interneuron', 'both rIa interneurons'], [['mF','mE'], 'flexor motor neuron', 'extensor motor neuron', 'both motor neurons']];
+  const names = [];
+  groups.forEach(([[a, b], na, nb, both]) => { if (R(a) && R(b)) names.push(both); else if (R(a)) names.push(na); else if (R(b)) names.push(nb); });
+  let h = '<h3>' + (removed.size ? `Removed: ${names.join(', ')}` : 'Intact circuit') + '</h3>';
+  const notes = [];
+  if (st.drive < 0.2) notes.push('With little or no tonic drive the rhythm generators stay quiet. Locomotion has to be started by descending or sensory input, but once started the CPG keeps it going on its own.');
+  if (!removed.size && st.drive >= 0.2) notes.push('Each E/R population bursts on its own. Reciprocal inhibition makes one side silence the other, so activity passes back and forth like a clock: flexor, extensor, flexor. Raise the drive and the cycle speeds up, as when an animal walks faster.');
+  if (R('erF') && R('erE')) notes.push('With both rhythm generators gone there is nothing to set the rhythm. The motor neurons receive only steady drive, so there are no bursts.');
+  else if (R('erF') || R('erE')) notes.push(`Without the ${R('erF') ? 'flexor' : 'extensor'} rhythm generator, that muscle loses its bursts. The ${R('erF') ? 'extensor' : 'flexor'} E/R still bursts by itself, so a rhythm survives on one side only.`);
+  if (R('iF') && R('iE')) notes.push('Without reciprocal inhibition, both rhythm generators still burst, but nothing keeps them out of step. They run at their own slightly different speeds, drift in and out of phase, and the flexor and extensor <b>co-contract</b> (red shading in the recording). The rhythm comes from the E/R neurons; the alternation comes from inhibition.');
+  else if (R('iF') || R('iE')) notes.push('With inhibition in only one direction, one side can still silence the other, which is enough to keep the two halves alternating here, though less robustly.');
+  if (R('eF') || R('eE')) notes.push(`Removing the ${R('eF') && R('eE') ? 'E neurons' : (R('eF') ? 'flexor' : 'extensor') + ' E neuron'} cuts the link from rhythm generator to motor neuron. The rhythm is still there in the E/R neurons, but that muscle gets no bursts: generating the rhythm and shaping the output are separate jobs.`);
+  if (R('rF') || R('rE')) notes.push('The rIa interneurons silence the antagonist motor neurons during each phase. Without them, the motor neurons leak some activity during the wrong phase, so alternation at the muscles is less clean.');
+  if (R('mF') || R('mE')) notes.push(`With the ${R('mF') && R('mE') ? 'motor neurons' : (R('mF') ? 'flexor' : 'extensor') + ' motor neuron'} removed the CPG keeps running, but the signal can’t reach the muscle: the final common path is cut.`);
+  h += notes.length ? `<p class="now">${notes[0]}</p>` + notes.slice(1).map(n => `<p>${n}</p>`).join('') : '';
+  $('story').innerHTML = h;
+}
+
+/* ---------- controls ---------- */
+$('drive').addEventListener('input', e => { st.drive = +e.target.value / 100; $('driveTxt').textContent = e.target.value + '%'; renderStory(); });
+$('restoreBtn').addEventListener('click', () => { removed.clear(); syncNodes(); renderStory(); });
+$('noInhBtn').addEventListener('click', () => { ['iF','iE','rF','rE'].forEach(k => removed.add(k)); syncNodes(); renderStory(); });
+$('pauseBtn').addEventListener('click', () => { st.paused = !st.paused; $('pauseBtn').setAttribute('aria-pressed', st.paused ? 'true' : 'false'); $('pauseBtn').textContent = st.paused ? 'Resume' : 'Pause'; });
+
+/* ---------- loop ---------- */
+buildCircuit(); buildEdges(); buildNodes(); syncNodes(); renderStory();
+for (let i = 0; i < 3000; i++) step(0.001);
+let last = performance.now(), sAcc = 0, stAcc = 0;
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!st.paused){
+    const n = Math.round(dt / 0.001);
+    for (let i = 0; i < n; i++){ step(0.001); sAcc += 0.001;
+      if (sAcc >= 0.008){ sAcc = 0; samples.push({t:A.t, erF:A.erF, erE:A.erE, mF:A.mF, mE:A.mE, n:0.55 + 0.45 * Math.random()}); } }
+    while (samples.length && samples[0].t < A.t - 8.2) samples.shift();
+    stAcc += dt; if (stAcc > 0.5){ stAcc = 0; renderStatus(); }
+  }
+  renderCircuit(); drawTraces(); drawLeg();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
