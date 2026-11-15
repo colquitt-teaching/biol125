@@ -110,6 +110,11 @@ th{color:var(--muted);font-weight:700}
       <button class="btn gamma" id="coBtn" aria-pressed="false">Stimulate γ with α</button>
     </div>
     <div class="group">
+      <label class="lbl" for="tonic">Tonic contraction</label>
+      <input type="range" id="tonic" min="0" max="100" step="5" value="0" style="accent-color:var(--alpha)">
+      <span class="val" id="tonicTxt">0%</span>
+    </div>
+    <div class="group">
       <button class="btn" id="listenBtn" aria-pressed="false">Listen to Ia</button>
       <button class="btn" id="pauseBtn" aria-pressed="false">Pause</button>
     </div>
@@ -127,6 +132,11 @@ th{color:var(--muted);font-weight:700}
         <button class="btn" id="exLow">Tap with low γ bias</button>
         <button class="btn" id="exHigh">Tap with high γ bias</button>
       </div>
+      <div class="row">
+        <span class="lbl">Shortened muscle:</span>
+        <button class="btn" id="exTonicLow">Hold contraction, tap (γ low)</button>
+        <button class="btn" id="exTonicHigh">Hold contraction, tap (γ adjusted)</button>
+      </div>
     </section>
 
     <section class="panel" aria-label="Recordings">
@@ -143,8 +153,8 @@ th{color:var(--muted);font-weight:700}
       <h2>Your tendon taps</h2>
       <p class="hint">Each tap is logged here so you can compare reflex strength at different γ bias.</p>
       <table>
-        <thead><tr><th>Tap</th><th>γ bias</th><th>Peak Ia rate</th><th>α motor neurons recruited</th><th>Peak reflex force</th></tr></thead>
-        <tbody id="log"><tr><td colspan="5" style="text-align:left;color:var(--muted)">No taps yet.</td></tr></tbody>
+        <thead><tr><th>Tap</th><th>Tonic contraction</th><th>γ bias</th><th>Peak Ia rate</th><th>α motor neurons recruited</th><th>Peak reflex force</th></tr></thead>
+        <tbody id="log"><tr><td colspan="6" style="text-align:left;color:var(--muted)">No taps yet.</td></tr></tbody>
       </table>
       <div class="row"><button class="btn" id="clearLog">Clear</button></div>
     </section>
@@ -169,7 +179,7 @@ readColors();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
 
 /* ---------- state ---------- */
-const st = {mode:'iso', gb:0, co:false, paused:false, listen:false};
+const st = {mode:'iso', gb:0, co:false, paused:false, listen:false, tonic:0};
 const S = {t:0, Fv:0, Fr:0, s:0, L:0, e:0, ePrev:0, rate:0, phase:0, nRec:0, mnRates:new Array(12).fill(0),
   alphaUntil:-1, tapAt:-10, holdAt:-10, gEff:0, iaSyn:0};
 const samples = [], spikes = [];
@@ -194,15 +204,17 @@ function stretchInput(t){
 function step(dt){
   S.t += dt;
   const a = alphaEnv(S.t);
-  S.Fv += ((a ? 1 : 0) - S.Fv) * dt / (a ? 0.05 : 0.14);
+  const aTarget = Math.max(a ? 1 : 0, st.tonic);   // brief α stimulation or a steady (tonic) α drive
+  S.Fv += (aTarget - S.Fv) * dt / (aTarget > S.Fv ? 0.05 : 0.14);
   S.s = stretchInput(S.t);
   S.L = S.s - 0.35 * (S.Fv + S.Fr);
-  const co = st.co ? a : 0;
+  const co = st.co ? Math.max(a, st.tonic) : 0;
   S.gEff = clamp(st.gb + 0.8 * co, 0, 1);
   // intrafusal poles contract with γ, stretching the central (sensory) region
-  S.e = S.L + 0.15 * st.gb + 0.44 * coLag(co, dt);
+  S.e = S.L + 0.3 * st.gb + 0.44 * coLag(co, dt);
   const dedt = (S.e - S.ePrev) / dt; S.ePrev = S.e;
-  S.rate = clamp(12 + (100 + 250 * st.gb) * S.e + (25 + 40 * st.gb) * dedt, 0, 250);
+  const taut = clamp(1 + S.e / 0.06, 0, 1);         // a slack spindle can't transmit fast stretches either
+  S.rate = clamp(12 + (100 + 150 * st.gb) * S.e + (25 + 40 * st.gb) * dedt * taut, 0, 250);
   // regular Ia firing
   S.phase += S.rate * dt;
   if (S.phase >= 1){ S.phase -= 1; spikes.push(S.t); if (st.listen) click(); }
@@ -231,12 +243,12 @@ function coLag(co, dt){ coState += (co - coState) * dt / 0.04; return coState; }
 function stimAlpha(){ S.alphaUntil = S.t + 0.45; lastEvent = {type:'alpha', co:st.co, gb:st.gb, mode:st.mode, t:S.t}; renderStory(); }
 function tap(){ S.tapAt = S.t; startTrack('tap'); }
 function hold(){ S.holdAt = S.t; startTrack('hold'); }
-function startTrack(kind){ track = {kind, t0:S.t, gb:st.gb, mode:st.mode, peakRate:0, peakN:0, peakF:0}; lastEvent = {type:kind, gb:st.gb, mode:st.mode}; renderStory(); }
+function startTrack(kind){ track = {kind, t0:S.t, gb:st.gb, tonic:st.tonic, mode:st.mode, peakRate:0, peakN:0, peakF:0}; lastEvent = {type:kind, gb:st.gb, mode:st.mode}; renderStory(); }
 function finishTrack(){
   const tr = track; track = null;
   if (tr.kind === 'tap'){
     tapCount++;
-    taps.push({n:tapCount, gb:tr.gb, rate:tr.peakRate, mn:tr.mode === 'reflex' ? tr.peakN : null, f:tr.mode === 'reflex' ? tr.peakF : null});
+    taps.push({n:tapCount, gb:tr.gb, tonic:tr.tonic, rate:tr.peakRate, mn:tr.mode === 'reflex' ? tr.peakN : null, f:tr.mode === 'reflex' ? tr.peakF : null});
     renderLog();
   }
   lastEvent = {...lastEvent, result:tr}; renderStory();
@@ -316,6 +328,9 @@ function drawSetup(){
   c.fillText('Extrafusal', xm - 120 + (reflex ? 40 : 0), top + 40); c.fillText('muscle fibers', xm - 120 + (reflex ? 40 : 0), top + 54);
   c.fillText('Intrafusal fibers', xs - 10, top - 18);
   c.fillText('(spindle)', xs - 10, top - 4);
+  if (S.e < -0.03){ c.fillStyle = rgb(COL.alpha); c.font = FONT(700, 12.5); c.fillText('Slack', xs + 14, yc - 24); }
+  else { c.fillStyle = rgb(COL.gamma); c.font = FONT(700, 12.5); c.fillText('Taut', xs + 14, yc - 24); }
+  c.fillStyle = rgb(COL.ink); c.font = FONT(400, 12.5);
   if (!reflex){
     electrode(c, 448, yc + 52, 'Record', false);
     c.fillStyle = rgb(COL.ink); c.fillText('Spindle afferent (Ia)', 468, yc + 74);
@@ -422,20 +437,28 @@ function renderStory(){
     }
   }
   h += `<p class="now">${now}</p>`;
+  if (st.tonic > 0.02){
+    const eBase = -0.35 * st.tonic + 0.3 * st.gb + (st.co ? 0.44 * st.tonic : 0);
+    const need = Math.min(100, Math.ceil(0.35 * st.tonic / 0.3 * 20) * 5);
+    h += eBase < -0.03
+      ? `<p class="now"><b>Tonic contraction ${pct(st.tonic)}, spindle slack.</b> A steady α drive holds the muscle shortened. The spindle lies in parallel with the extrafusal fibers, so it shortens too and goes slack: the Ia afferent falls silent and a tendon tap barely registers. The spindle has lost its sensitivity at this length. Raise the γ bias to about ${need}%, or turn on “Stimulate γ with α,” to take up the slack.</p>`
+      : `<p class="now"><b>Tonic contraction ${pct(st.tonic)}, spindle taut.</b> The muscle is held shortened, but ${st.co ? 'γ motor neurons firing along with α' : 'the γ bias'} contracts the intrafusal poles enough to take up the slack. The center of the spindle stays stretched, so the Ia afferent keeps firing and still responds to a tap. Adjusting γ activity with α activity keeps spindles sensitive at every muscle length.</p>`;
+  }
   if (reflex && st.gb >= 0.85) h += '<p>At this high bias the spindle fires strongly even at rest, so a few α motor neurons are active without any stretch: the muscle has more tone.</p>';
   h += '<p class="tps"><b>Think – pair – share.</b> γ bias sensitizes muscles to stretch. What daily activities might call for high versus low γ bias?</p>';
   $('story').innerHTML = h;
 }
 function renderLog(){
   const tb = $('log');
-  if (!taps.length){ tb.innerHTML = '<tr><td colspan="5" style="text-align:left;color:var(--muted)">No taps yet.</td></tr>'; return; }
-  tb.innerHTML = taps.slice(-8).map(t => `<tr><td>${t.n}</td><td>${pct(t.gb)}</td><td>${Math.round(t.rate)} spikes/s</td><td>${t.mn == null ? '— (isolated)' : t.mn + ' of 12'}</td><td>${t.f == null ? '—' : Math.round(t.f * 100) + '%'}</td></tr>`).join('');
+  if (!taps.length){ tb.innerHTML = '<tr><td colspan="6" style="text-align:left;color:var(--muted)">No taps yet.</td></tr>'; return; }
+  tb.innerHTML = taps.slice(-8).map(t => `<tr><td>${t.n}</td><td>${pct(t.tonic)}</td><td>${pct(t.gb)}</td><td>${Math.round(t.rate)} spikes/s</td><td>${t.mn == null ? '— (isolated)' : t.mn + ' of 12'}</td><td>${t.f == null ? '—' : Math.round(t.f * 100) + '%'}</td></tr>`).join('');
 }
 
 /* ---------- controls ---------- */
 function sync(){
   document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === st.mode ? 'true' : 'false'));
   $('gbias').value = Math.round(st.gb * 100); $('gbiasTxt').textContent = pct(st.gb);
+  $('tonic').value = Math.round(st.tonic * 100); $('tonicTxt').textContent = pct(st.tonic);
   $('coBtn').setAttribute('aria-pressed', st.co ? 'true' : 'false');
   $('listenBtn').setAttribute('aria-pressed', st.listen ? 'true' : 'false');
   $('pauseBtn').setAttribute('aria-pressed', st.paused ? 'true' : 'false'); $('pauseBtn').textContent = st.paused ? 'Resume' : 'Pause';
@@ -453,10 +476,13 @@ $('holdBtn').addEventListener('click', hold);
 $('listenBtn').addEventListener('click', () => { st.listen = !st.listen; if (st.listen) ensureAudio(); sync(); });
 $('pauseBtn').addEventListener('click', () => { st.paused = !st.paused; sync(); });
 $('clearLog').addEventListener('click', () => { taps.length = 0; tapCount = 0; renderLog(); });
-$('exA').addEventListener('click', () => { st.mode = 'iso'; st.gb = 0; st.co = false; st.paused = false; sync(); stimAlpha(); });
-$('exB').addEventListener('click', () => { st.mode = 'iso'; st.gb = 0; st.co = true; st.paused = false; sync(); stimAlpha(); });
-$('exLow').addEventListener('click', () => { st.mode = 'reflex'; st.gb = 0.1; st.paused = false; sync(); setTimeout(tap, 350); });
-$('exHigh').addEventListener('click', () => { st.mode = 'reflex'; st.gb = 0.9; st.paused = false; sync(); setTimeout(tap, 350); });
+$('exA').addEventListener('click', () => { st.mode = 'iso'; st.gb = 0; st.co = false; st.tonic = 0; st.paused = false; sync(); stimAlpha(); });
+$('exB').addEventListener('click', () => { st.mode = 'iso'; st.gb = 0; st.co = true; st.tonic = 0; st.paused = false; sync(); stimAlpha(); });
+$('exLow').addEventListener('click', () => { st.mode = 'reflex'; st.gb = 0.1; st.tonic = 0; st.paused = false; sync(); setTimeout(tap, 350); });
+$('exHigh').addEventListener('click', () => { st.mode = 'reflex'; st.gb = 0.9; st.tonic = 0; st.paused = false; sync(); setTimeout(tap, 350); });
+$('tonic').addEventListener('input', e => { st.tonic = +e.target.value / 100; sync(); renderStory(); });
+$('exTonicLow').addEventListener('click', () => { st.mode = 'iso'; st.tonic = 0.6; st.gb = 0; st.co = false; st.paused = false; lastEvent = null; sync(); renderStory(); setTimeout(tap, 900); });
+$('exTonicHigh').addEventListener('click', () => { st.mode = 'iso'; st.tonic = 0.6; st.gb = 0.7; st.co = false; st.paused = false; lastEvent = null; sync(); renderStory(); setTimeout(tap, 900); });
 window.addEventListener('resize', () => {});
 
 /* ---------- loop ---------- */
@@ -469,7 +495,7 @@ function frame(now){
     for (let i = 0; i < n; i++){
       step(0.001); sAcc += 0.001;
       if (sAcc >= 0.005){ sAcc = 0;
-        samples.push({t:S.t, a:alphaEnv(S.t), g:S.gEff, st:S.s > 0.005 ? 1 : 0, L:S.L, r:S.rate, n:S.nRec, F:S.Fv + S.Fr}); }
+        samples.push({t:S.t, a:Math.max(alphaEnv(S.t), st.tonic), g:S.gEff, st:S.s > 0.005 ? 1 : 0, L:S.L, r:S.rate, n:S.nRec, F:S.Fv + S.Fr}); }
     }
     while (samples.length && samples[0].t < S.t - 6.2) samples.shift();
     while (spikes.length && spikes[0] < S.t - 6.2) spikes.shift();
